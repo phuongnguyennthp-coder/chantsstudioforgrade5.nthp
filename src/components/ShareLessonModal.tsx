@@ -127,6 +127,11 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               </span>
             </div>
           </div>
+          <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
+            Sẵn sàng giao
+          </span>
+        </div>
+
         {/* Warning if video is a local blob from teacher PC */}
         {(Boolean(lesson.videoUrl?.startsWith('blob:')) || Boolean(lesson.karaokeVideoUrl?.startsWith('blob:'))) && (
           <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-400 text-amber-950 space-y-2 animate-fade-in">
