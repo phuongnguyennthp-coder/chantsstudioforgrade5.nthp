@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Upload,
@@ -17,6 +17,9 @@ import {
   AlertCircle,
   Volume2,
   Share2,
+  Edit,
+  FileText,
+  RotateCcw,
 } from 'lucide-react';
 import { SongLesson } from '../types/kidsMusic';
 import { extractAudioFromMedia } from '../utils/audioExtractor';
@@ -27,6 +30,7 @@ interface TeacherStudioModalProps {
   onClose: () => void;
   lessons: SongLesson[];
   onAddLesson: (lesson: SongLesson) => void;
+  onUpdateLesson: (lesson: SongLesson) => void;
   onDeleteLesson: (id: string) => void;
   onSelectAndAssign: (lesson: SongLesson) => void;
 }
@@ -36,24 +40,37 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
   onClose,
   lessons,
   onAddLesson,
+  onUpdateLesson,
   onDeleteLesson,
   onSelectAndAssign,
 }) => {
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
+  const [selectedDropdownLessonId, setSelectedDropdownLessonId] = useState<string>(
+    lessons[0]?.id || ''
+  );
+
   const [title, setTitle] = useState('');
   const [gradeLevel, setGradeLevel] = useState('Grade 5');
   const [category, setCategory] = useState('Vocal Melody & Rhythm');
   const [bpm, setBpm] = useState(90);
   const [lyricsText, setLyricsText] = useState('');
   const [missionTask, setMissionTask] = useState(
-    'Watch the video carefully, practice singing along with the drum beat, and record your joyful voice!',
+    'Watch the video carefully, practice singing along with the drum beat, and record your joyful voice!'
   );
 
-  // Video and audio files / URLs
+  // Dual-mode lyrics: 'text' or 'karaoke_video'
+  const [lyricsMode, setLyricsMode] = useState<'text' | 'karaoke_video'>('text');
+  const [karaokeVideoUrl, setKaraokeVideoUrl] = useState('');
+  const [karaokeVideoFileName, setKaraokeVideoFileName] = useState<string | null>(null);
+  const [karaokeCustomUrl, setKaraokeCustomUrl] = useState('');
+
+  // Video and audio files / URLs for Step 1
   const [videoFileUrl, setVideoFileUrl] = useState<string | null>(null);
   const [videoFileName, setVideoFileName] = useState<string | null>(null);
   const [videoFileObj, setVideoFileObj] = useState<File | null>(null);
   const [customVideoUrl, setCustomVideoUrl] = useState('');
 
+  // Beat audio for Step 2
   const [beatFileUrl, setBeatFileUrl] = useState<string | null>(null);
   const [beatFileName, setBeatFileName] = useState<string | null>(null);
   const [beatDuration, setBeatDuration] = useState<number | null>(null);
@@ -70,7 +87,70 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
   // Heyzine Share modal state
   const [sharingLesson, setSharingLesson] = useState<SongLesson | null>(null);
 
+  // Keep dropdown selection synchronized if lessons change
+  useEffect(() => {
+    if (lessons.length > 0 && !lessons.some((l) => l.id === selectedDropdownLessonId)) {
+      setSelectedDropdownLessonId(lessons[0].id);
+    }
+  }, [lessons, selectedDropdownLessonId]);
+
   if (!isOpen) return null;
+
+  const selectedDropdownLesson = lessons.find((l) => l.id === selectedDropdownLessonId) || lessons[0];
+
+  const handleStartEditLesson = (lessonToEdit: SongLesson) => {
+    setEditingLessonId(lessonToEdit.id);
+    setTitle(lessonToEdit.title);
+    setGradeLevel(lessonToEdit.gradeLevel || 'Grade 5');
+    setCategory(lessonToEdit.category || 'Vocal Melody & Rhythm');
+    setBpm(lessonToEdit.bpm || 90);
+    setMissionTask(lessonToEdit.missionTask || '');
+
+    // Video
+    setVideoFileUrl(lessonToEdit.videoUrl || null);
+    setCustomVideoUrl(lessonToEdit.videoUrl || '');
+    setVideoFileName(lessonToEdit.title ? `Video • ${lessonToEdit.title}` : null);
+    setVideoFileObj(null);
+
+    // Beat
+    setBeatFileUrl(lessonToEdit.beatAudioUrl || null);
+    setBeatFileName(lessonToEdit.beatAudioUrl ? `Beat • ${lessonToEdit.title}` : null);
+
+    // Lyrics & Karaoke
+    setLyricsMode(lessonToEdit.lyricsMode || 'text');
+    setLyricsText((lessonToEdit.lyrics || []).join('\n'));
+    setKaraokeVideoUrl(lessonToEdit.karaokeVideoUrl || '');
+    setKaraokeCustomUrl(lessonToEdit.karaokeVideoUrl || '');
+    setKaraokeVideoFileName(lessonToEdit.karaokeVideoUrl ? 'Video Karaoke đã lưu' : null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLessonId(null);
+    handleResetForm();
+  };
+
+  const handleResetForm = () => {
+    setTitle('');
+    setGradeLevel('Grade 5');
+    setCategory('Vocal Melody & Rhythm');
+    setBpm(90);
+    setLyricsText('');
+    setLyricsMode('text');
+    setKaraokeVideoUrl('');
+    setKaraokeCustomUrl('');
+    setKaraokeVideoFileName(null);
+    setMissionTask(
+      'Watch the video carefully, practice singing along with the drum beat, and record your joyful voice!'
+    );
+    setVideoFileUrl(null);
+    setVideoFileName(null);
+    setVideoFileObj(null);
+    setCustomVideoUrl('');
+    setBeatFileUrl(null);
+    setBeatFileName(null);
+    setBeatDuration(null);
+    setExtractError(null);
+  };
 
   const handleVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,6 +160,15 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
       setVideoFileName(file.name);
       setVideoFileObj(file);
       setExtractError(null);
+    }
+  };
+
+  const handleKaraokeFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setKaraokeVideoUrl(url);
+      setKaraokeVideoFileName(file.name);
     }
   };
 
@@ -163,13 +252,16 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
       }
       const audio = new Audio(beatFileUrl);
       audio.onended = () => setIsPreviewPlaying(false);
-      audio.play().then(() => {
-        setPreviewAudio(audio);
-        setIsPreviewPlaying(true);
-      }).catch(err => {
-        console.error('Preview error:', err);
-        setIsPreviewPlaying(false);
-      });
+      audio
+        .play()
+        .then(() => {
+          setPreviewAudio(audio);
+          setIsPreviewPlaying(true);
+        })
+        .catch((err) => {
+          console.error('Preview error:', err);
+          setIsPreviewPlaying(false);
+        });
     }
   };
 
@@ -193,42 +285,86 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
       .map((l) => l.trim())
       .filter((l) => l.length > 0);
 
-    const newLesson: SongLesson = {
-      id: `lesson-${Date.now()}`,
-      title: title.trim(),
-      gradeLevel,
-      category,
-      bpm,
-      videoType: 'file',
-      videoUrl:
-        videoFileUrl ||
-        customVideoUrl.trim() ||
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      beatAudioUrl: beatFileUrl || undefined,
-      lyrics:
-        lyricsArray.length > 0
-          ? lyricsArray
-          : [
-              'Sing along with the happy beat,',
-              'Clap your hands and stamp your feet!',
-              'RoboBuddy loves your sweet song,',
-              'Come and sing all day long!',
-            ],
-      missionTask:
-        missionTask.trim() ||
-        'Listen to the beat and sing your best into the microphone!',
-      thumbnailColor: 'from-pink-500 to-yellow-400',
-      createdAt: 'Custom Teacher Assignment',
-    };
+    const activeKaraokeUrl = karaokeVideoUrl || karaokeCustomUrl.trim();
 
-    onAddLesson(newLesson);
-    onSelectAndAssign(newLesson);
-    setSharingLesson(newLesson);
+    if (editingLessonId) {
+      // Update existing lesson
+      const original = lessons.find((l) => l.id === editingLessonId);
+      const updatedLesson: SongLesson = {
+        id: editingLessonId,
+        title: title.trim(),
+        gradeLevel,
+        category,
+        bpm,
+        videoType: 'file',
+        videoUrl:
+          videoFileUrl ||
+          customVideoUrl.trim() ||
+          original?.videoUrl ||
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        beatAudioUrl: beatFileUrl || original?.beatAudioUrl,
+        lyricsMode,
+        karaokeVideoUrl: activeKaraokeUrl || original?.karaokeVideoUrl || undefined,
+        lyrics:
+          lyricsArray.length > 0
+            ? lyricsArray
+            : original?.lyrics || [
+                'Sing along with the happy beat,',
+                'Clap your hands and stamp your feet!',
+              ],
+        missionTask:
+          missionTask.trim() || 'Listen to the beat and sing your best into the microphone!',
+        thumbnailColor: original?.thumbnailColor || 'from-pink-500 to-yellow-400',
+        createdAt: original?.createdAt || 'Updated Unit',
+      };
+
+      onUpdateLesson(updatedLesson);
+      onSelectAndAssign(updatedLesson);
+      setEditingLessonId(null);
+      handleResetForm();
+      setSharingLesson(updatedLesson);
+    } else {
+      // Create new lesson
+      const newLesson: SongLesson = {
+        id: `lesson-${Date.now()}`,
+        title: title.trim(),
+        gradeLevel,
+        category,
+        bpm,
+        videoType: 'file',
+        videoUrl:
+          videoFileUrl ||
+          customVideoUrl.trim() ||
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        beatAudioUrl: beatFileUrl || undefined,
+        lyricsMode,
+        karaokeVideoUrl: activeKaraokeUrl || undefined,
+        lyrics:
+          lyricsArray.length > 0
+            ? lyricsArray
+            : [
+                'Sing along with the happy beat,',
+                'Clap your hands and stamp your feet!',
+                'RoboBuddy loves your sweet song,',
+                'Come and sing all day long!',
+              ],
+        missionTask:
+          missionTask.trim() ||
+          'Listen to the beat and sing your best into the microphone!',
+        thumbnailColor: 'from-pink-500 to-yellow-400',
+        createdAt: 'Custom Teacher Assignment',
+      };
+
+      onAddLesson(newLesson);
+      onSelectAndAssign(newLesson);
+      handleResetForm();
+      setSharingLesson(newLesson);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl border-4 border-yellow-400 p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-6">
+      <div className="bg-white rounded-3xl border-4 border-yellow-400 p-6 sm:p-8 max-w-3xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto space-y-6">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-4 border-b-2 border-zinc-100">
           <div className="flex items-center gap-3">
@@ -240,7 +376,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 Teacher Studio • Video & Lesson Creator
               </h2>
               <p className="text-xs font-bold text-zinc-500">
-                Upload new song videos and backing beats. Students only see the clean practice mission!
+                Quản lý các Unit bài học, tải video beat và tạo bài tập cho học sinh!
               </p>
             </div>
           </div>
@@ -253,81 +389,128 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
           </button>
         </div>
 
-        {/* Existing Lessons Manager */}
-        <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-200 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-amber-900 uppercase">
-              Current Assigned Lessons ({lessons.length}):
+        {/* SECTION A: Dropdown Select Units & Overview */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 sm:p-5 rounded-2xl border-2 border-amber-300 space-y-3 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📚</span>
+              <label className="text-xs font-black text-amber-950 uppercase">
+                Danh sách bài đã giao trên App:
+              </label>
+            </div>
+            <span className="text-xs font-black text-amber-900 bg-amber-200/90 px-3 py-1 rounded-full shadow-sm">
+              Đã giao: {lessons.length} Units 🌟
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            {lessons.map((l) => (
-              <div
-                key={l.id}
-                className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center justify-between gap-2 shadow-sm"
-              >
-                <div className="truncate">
-                  <span className="text-xs font-black text-zinc-800 block truncate">
-                    🎵 {l.title}
-                  </span>
-                  <span className="text-[10px] text-zinc-500 font-semibold">
-                    {l.gradeLevel} • {l.bpm} BPM
-                  </span>
-                </div>
+          {/* Dropdown Select Box */}
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <select
+              value={selectedDropdownLessonId}
+              onChange={(e) => setSelectedDropdownLessonId(e.target.value)}
+              className="flex-1 bg-white border-2 border-amber-300 text-xs font-black text-zinc-800 rounded-xl p-3 outline-none shadow-sm focus:border-amber-500 cursor-pointer"
+            >
+              {lessons.map((l, idx) => (
+                <option key={l.id} value={l.id}>
+                  Unit {idx + 1}: {l.title} ({l.bpm} BPM) • {l.lyricsMode === 'karaoke_video' ? '🎬 Video Karaoke' : '📝 Lời text'}
+                </option>
+              ))}
+            </select>
+          </div>
 
-                <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+          {/* Quick Action Card for Selected Unit */}
+          {selectedDropdownLesson && (
+            <div className="bg-white p-3.5 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black text-pink-700 block">
+                  🎵 {selectedDropdownLesson.title}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-semibold block">
+                  {selectedDropdownLesson.gradeLevel} • {selectedDropdownLesson.bpm} BPM •{' '}
+                  {selectedDropdownLesson.lyricsMode === 'karaoke_video'
+                    ? '🎬 Video Karaoke'
+                    : `📝 ${selectedDropdownLesson.lyrics.length} câu lời hát`}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectAndAssign(selectedDropdownLesson);
+                    onClose();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-sm transition cursor-pointer"
+                  title="Dạy và hiển thị bài này ngay cho học sinh"
+                >
+                  👉 Dạy bài này ngay
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleStartEditLesson(selectedDropdownLesson)}
+                  className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1"
+                  title="Chỉnh sửa nội dung Unit này"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>Chỉnh sửa</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSharingLesson(selectedDropdownLesson)}
+                  className="px-3 py-1.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1"
+                  title="Xuất Link Heyzine cho Unit này"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Xuất Heyzine</span>
+                </button>
+
+                {lessons.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => setSharingLesson(l)}
-                    className="px-2.5 py-1 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-[11px] font-bold cursor-pointer transition shadow flex items-center gap-1"
-                    title="Giao bài cho học sinh / Xuất link Heyzine"
+                    onClick={() => onDeleteLesson(selectedDropdownLesson.id)}
+                    className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer transition"
+                    title="Xóa Unit này"
                   >
-                    <Share2 className="w-3.5 h-3.5" />
-                    <span>Xuất Link Heyzine</span>
+                    <Trash2 className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => {
-                      onSelectAndAssign(l);
-                      onClose();
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold cursor-pointer transition shadow"
-                  >
-                    Assign Now
-                  </button>
-                  {lessons.length > 1 && (
-                    <button
-                      onClick={() => onDeleteLesson(l.id)}
-                      className="p-1 text-zinc-400 hover:text-rose-500 cursor-pointer"
-                      title="Delete lesson"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
 
-        {/* Create New Lesson Form */}
-        <form onSubmit={handleSaveAndAssign} className="space-y-4">
-          <h3 className="text-sm font-black text-zinc-900 uppercase tracking-wide">
-            Add New Song & Video for Students:
-          </h3>
+        {/* SECTION B: Lesson Form (Add New OR Edit Existing) */}
+        <form onSubmit={handleSaveAndAssign} className="space-y-4 pt-2 border-t-2 border-zinc-100">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm sm:text-base font-black text-zinc-900 uppercase tracking-wide flex items-center gap-2">
+              <span>{editingLessonId ? '✏️ CHỈNH SỬA BÀI HỌC (EDIT LESSON):' : '➕ THÊM BÀI HỌC MỚI (ADD NEW SONG):'}</span>
+            </h3>
+
+            {editingLessonId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="text-xs font-bold text-zinc-500 hover:text-zinc-800 underline cursor-pointer"
+              >
+                Hủy chế độ sửa (Tạo bài mới)
+              </button>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Song Title */}
             <div>
               <label className="text-xs font-black text-zinc-700 block mb-1">
-                Song Title:
+                Tên Bài Hát (Song Title / Unit):
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., Do Re Mi / Wheels on the Bus"
+                placeholder="VD: Unit 1 All about me"
                 className="w-full text-sm font-bold text-zinc-800 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none"
               />
             </div>
@@ -336,14 +519,13 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-black text-zinc-700 block mb-1">
-                  Grade Level:
+                  Khối Lớp:
                 </label>
                 <select
                   value={gradeLevel}
                   onChange={(e) => setGradeLevel(e.target.value)}
                   className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none cursor-pointer"
                 >
-                  <option value="Kindergarten">Kindergarten</option>
                   <option value="Grade 1">Grade 1</option>
                   <option value="Grade 2">Grade 2</option>
                   <option value="Grade 3">Grade 3</option>
@@ -354,35 +536,35 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
               <div>
                 <label className="text-xs font-black text-zinc-700 block mb-1">
-                  Tempo (BPM):
+                  Tốc độ (BPM):
                 </label>
                 <input
                   type="number"
-                  min="60"
-                  max="160"
+                  min={50}
+                  max={180}
                   value={bpm}
-                  onChange={(e) => setBpm(parseInt(e.target.value))}
+                  onChange={(e) => setBpm(Number(e.target.value))}
                   className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* Video Upload Section */}
-          <div className="p-4 bg-pink-50 rounded-2xl border-2 border-pink-200 space-y-2">
+          {/* 1. Song Video Section */}
+          <div className="bg-pink-50/60 p-4 rounded-2xl border-2 border-pink-200 space-y-3">
             <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
               <Video className="w-4 h-4 text-pink-600" />
-              <span>1. Song Video for Students to Watch:</span>
+              <span>1. Video Bài Hát Mẫu Cho Học Sinh Xem (Song Video):</span>
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-              {/* File upload */}
-              <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-pink-300 rounded-xl bg-white hover:bg-pink-100/50 transition cursor-pointer text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Upload local video */}
+              <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-pink-300 rounded-xl bg-white hover:bg-pink-50 transition cursor-pointer text-center">
                 <Upload className="w-6 h-6 text-pink-500 mb-1" />
                 <span className="text-xs font-bold text-zinc-700">
-                  {videoFileName ? videoFileName : 'Upload Video File (MP4, WebM)'}
+                  {videoFileName ? videoFileName : 'Tải video từ máy (MP4, WebM)'}
                 </span>
-                <span className="text-[10px] text-zinc-400">Drag & drop or click</span>
+                <span className="text-[10px] text-zinc-400">Kéo thả file hoặc nhấn để chọn</span>
                 <input
                   type="file"
                   accept="video/*"
@@ -391,64 +573,61 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 />
               </label>
 
-              {/* Or direct video URL */}
-              <div>
-                <span className="text-[11px] font-bold text-zinc-500 block mb-1">
-                  Or enter video link / URL:
-                </span>
+              {/* Option B: Enter URL */}
+              <div className="flex flex-col justify-center space-y-1">
+                <label className="text-[11px] font-bold text-zinc-600">
+                  Hoặc dán link video / YouTube:
+                </label>
                 <input
                   type="url"
+                  placeholder="https://www.youtube.com/watch?v=... hoặc link .mp4"
                   value={customVideoUrl}
-                  onChange={(e) => setCustomVideoUrl(e.target.value)}
-                  placeholder="https://.../video.mp4"
-                  className="w-full text-xs font-medium text-zinc-800 bg-white p-2.5 rounded-xl border border-pink-200 outline-none"
+                  onChange={(e) => {
+                    setCustomVideoUrl(e.target.value);
+                    if (e.target.value.trim()) {
+                      setVideoFileName('Link: ' + e.target.value.trim());
+                    }
+                  }}
+                  className="w-full text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-pink-500 bg-white font-mono"
                 />
-                <span className="text-[10px] text-zinc-400 block mt-1">
-                  (Leave empty to use built-in cheerful animated sample video)
+                <span className="text-[10px] text-zinc-400">
+                  (Để trống sẽ dùng video hoạt hình mẫu vui nhộn của hệ thống)
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Instrumental Beat Upload / Option */}
-          <div className="p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-300 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-black text-emerald-950 uppercase flex items-center gap-1.5">
+          {/* 2. Backing Beat Section */}
+          <div className="bg-emerald-50/70 p-4 rounded-2xl border-2 border-emerald-300 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-emerald-900 uppercase flex items-center gap-1.5">
                 <Music className="w-4 h-4 text-emerald-600" />
-                <span>2. Backing Beat (Nhạc đệm / Beat bài hát):</span>
+                <span>2. Backing Beat (Nhạc Đệm / Beat Bài Hát):</span>
               </span>
-              {beatFileUrl && (
-                <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  Đã cài đặt beat
-                </span>
-              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
-              {/* Option A: Tải file Beat (Hỗ trợ cả Audio & Video) */}
-              <div className="flex flex-col justify-between">
-                <label className="flex flex-col items-center justify-center p-3.5 border-2 border-dashed border-emerald-400 rounded-xl bg-white hover:bg-emerald-100/60 transition cursor-pointer text-center group h-full">
-                  <div className="flex items-center gap-2 text-emerald-600 group-hover:scale-110 transition transform mb-1">
-                    <Upload className="w-5 h-5" />
-                    <Video className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-black text-zinc-800">
-                    {beatFileName ? beatFileName : 'Tải Beat hoặc Video (MP3, WAV, MP4, WebM)'}
-                  </span>
-                  <span className="text-[10px] text-zinc-400 mt-1">
-                    Hỗ trợ file âm thanh hoặc video (tự động trích xuất beat)
-                  </span>
-                  <input
-                    type="file"
-                    accept="audio/*,video/*"
-                    onChange={handleBeatFileUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option A: Upload Beat File */}
+              <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-emerald-300 rounded-xl bg-white hover:bg-emerald-50 transition cursor-pointer text-center">
+                <div className="flex gap-1 items-center mb-1">
+                  <Upload className="w-5 h-5 text-emerald-600" />
+                  <Video className="w-4 h-4 text-emerald-500" />
+                </div>
+                <span className="text-xs font-black text-emerald-800">
+                  Tải Beat hoặc Video (MP3, WAV, MP4, WebM)
+                </span>
+                <span className="text-[10px] text-zinc-500">
+                  Hỗ trợ file âm thanh hoặc video (tự động trích xuất beat)
+                </span>
+                <input
+                  type="file"
+                  accept="audio/*,video/*"
+                  onChange={handleBeatFileUpload}
+                  className="hidden"
+                />
+              </label>
 
-              {/* Option B: Trích xuất Beat trực tiếp từ Video gốc ở Bước 1 */}
+              {/* Option B: Extract Beat directly from Step 1's Video */}
               <div className="bg-white p-3 rounded-xl border-2 border-emerald-200 flex flex-col justify-between space-y-2 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black text-emerald-900 flex items-center gap-1">
@@ -529,7 +708,8 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                       {beatFileName}
                     </span>
                     <span className="text-[10px] text-emerald-800 font-bold block">
-                      {isPreviewPlaying ? 'Đang phát nghe thử...' : 'Bấm Play để nghe thử Beat'} {beatDuration ? `• ${beatDuration}s` : ''}
+                      {isPreviewPlaying ? 'Đang phát nghe thử...' : 'Bấm Play để nghe thử Beat'}{' '}
+                      {beatDuration ? `• ${beatDuration}s` : ''}
                     </span>
                   </div>
                 </div>
@@ -552,24 +732,120 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             )}
           </div>
 
-          {/* Lyrics Input */}
-          <div>
-            <label className="text-xs font-black text-zinc-700 block mb-1">
-              Sing-along Lyrics (each line on a new row):
-            </label>
-            <textarea
-              rows={3}
-              value={lyricsText}
-              onChange={(e) => setLyricsText(e.target.value)}
-              placeholder="Row, row, row your boat&#10;Gently down the stream&#10;Merrily, merrily, merrily, merrily&#10;Life is but a dream"
-              className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none"
-            />
+          {/* 3. Sing-Along Lyrics OR Karaoke Video Selection */}
+          <div className="bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50 p-4 sm:p-5 rounded-2xl border-2 border-pink-300 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-pink-600" />
+                <span>3. Lời Bài Hát Cho Học Sinh (Có 2 Sự Lựa Chọn: Text Hoặc Đăng Video):</span>
+              </span>
+            </div>
+
+            {/* Toggle Mode: Text Lyrics vs Karaoke Video */}
+            <div className="grid grid-cols-2 gap-2 bg-white/80 p-1.5 rounded-xl border border-pink-200">
+              <button
+                type="button"
+                onClick={() => setLyricsMode('text')}
+                className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  lyricsMode === 'text'
+                    ? 'bg-pink-500 text-white shadow-sm'
+                    : 'text-zinc-600 hover:bg-pink-50'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>📝 Lựa chọn 1: Chọn Text (Lời văn bản)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLyricsMode('karaoke_video')}
+                className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  lyricsMode === 'karaoke_video'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-zinc-600 hover:bg-purple-50'
+                }`}
+              >
+                <Video className="w-3.5 h-3.5" />
+                <span>🎬 Lựa chọn 2: Chọn Đăng Video (Karaoke có lời)</span>
+              </button>
+            </div>
+
+            {lyricsMode === 'text' ? (
+              <div className="space-y-1.5 animate-fade-in">
+                <label className="text-xs font-bold text-zinc-700 block">
+                  Nhập lời bài hát (mỗi câu một dòng):
+                </label>
+                <textarea
+                  rows={4}
+                  value={lyricsText}
+                  onChange={(e) => setLyricsText(e.target.value)}
+                  placeholder="Row, row, row your boat&#10;Gently down the stream&#10;Merrily, merrily, merrily, merrily&#10;Life is but a dream"
+                  className="w-full text-xs font-bold text-zinc-800 bg-white p-3 rounded-xl border-2 border-pink-200 focus:border-pink-500 outline-none leading-relaxed"
+                />
+              </div>
+            ) : (
+              <div className="space-y-3 animate-fade-in bg-white p-3.5 rounded-xl border border-purple-200">
+                <p className="text-xs font-bold text-purple-900">
+                  🎬 Chèn video có chữ karaoke chạy để học sinh vừa nhìn màn hình vừa hát thực hành:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Karaoke Video Upload */}
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-700 block mb-1">
+                      Tải file Video Karaoke từ máy (MP4, WebM):
+                    </label>
+                    <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
+                      <Upload className="w-5 h-5 text-purple-600 mb-1" />
+                      <span className="text-xs font-bold text-zinc-800">
+                        {karaokeVideoFileName || 'Chọn video karaoke từ máy'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleKaraokeFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Karaoke YouTube Link */}
+                  <div>
+                    <label className="text-[11px] font-bold text-zinc-700 block mb-1">
+                      Hoặc dán Link YouTube Karaoke:
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=... (Karaoke Sing-Along)"
+                      value={karaokeCustomUrl}
+                      onChange={(e) => {
+                        setKaraokeCustomUrl(e.target.value);
+                        setKaraokeVideoUrl(e.target.value);
+                      }}
+                      className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-2.5 rounded-xl border border-zinc-300 focus:border-purple-500 outline-none"
+                    />
+                    <span className="text-[10px] text-zinc-500 block mt-1">
+                      Hỗ trợ video YouTube có chữ chạy karaoke hoặc file video trực tuyến.
+                    </span>
+                  </div>
+                </div>
+
+                {(karaokeVideoUrl || karaokeCustomUrl) && (
+                  <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="truncate">
+                      Đã chọn Video Karaoke: {karaokeVideoFileName || karaokeCustomUrl}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mission Instruction for kids */}
           <div>
             <label className="text-xs font-black text-zinc-700 block mb-1">
-              Mission Instructions for Students:
+              Lời Dặn Dò / Nhiệm Vụ Cho Học Sinh (Mission Task):
             </label>
             <input
               type="text"
@@ -586,7 +862,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-xl shadow-green-300 flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95"
             >
               <CheckCircle2 className="w-5 h-5" />
-              <span>Save & Assign Mission to Students! 🚀</span>
+              <span>{editingLessonId ? 'Lưu Thay Đổi Bài Học! 💾' : 'Lưu & Giao Nhiệm Vụ Cho Học Sinh! 🚀'}</span>
             </button>
           </div>
         </form>
