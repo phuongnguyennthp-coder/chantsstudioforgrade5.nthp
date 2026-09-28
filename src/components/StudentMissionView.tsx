@@ -25,6 +25,8 @@ import {
   Video,
   Loader2,
   Scissors,
+  FileText,
+  X,
 } from 'lucide-react';
 import { SongLesson, RoboBuddyFeedback } from '../types/kidsMusic';
 import { kidsBeatEngine } from '../audio/kidsBeatEngine';
@@ -38,6 +40,7 @@ interface StudentMissionViewProps {
   lesson: SongLesson;
   allLessons: SongLesson[];
   onSelectLesson: (lesson: SongLesson) => void;
+  onUpdateLesson?: (lesson: SongLesson) => void;
   onOpenTeacherStudio?: () => void;
   onOpenApiKeyModal?: () => void;
   isStudentMode?: boolean;
@@ -56,6 +59,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   lesson,
   allLessons,
   onSelectLesson,
+  onUpdateLesson,
   onOpenTeacherStudio,
   onOpenApiKeyModal,
   isStudentMode = false,
@@ -103,6 +107,17 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     return lesson.videoUrl ? 'video_beat' : 'pure_beat';
   });
 
+  // Choice between Text Lyrics and Karaoke Video right in the practice box
+  const [lyricsChoice, setLyricsChoice] = useState<'text' | 'karaoke_video'>(() => {
+    return lesson.lyricsMode === 'karaoke_video' || lesson.karaokeVideoUrl
+      ? 'karaoke_video'
+      : 'text';
+  });
+  const [activeKaraokeUrl, setActiveKaraokeUrl] = useState<string>(lesson.karaokeVideoUrl || '');
+  const [showKaraokeModal, setShowKaraokeModal] = useState(false);
+  const [customKaraokeInputUrl, setCustomKaraokeInputUrl] = useState('');
+  const [karaokeUploadFileName, setKaraokeUploadFileName] = useState<string | null>(null);
+
   // Sync state when active lesson changes
   useEffect(() => {
     setActiveVideoUrl(lesson.videoUrl || '');
@@ -113,6 +128,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setIsRecording(false);
     setIsVideoPlaying(false);
     setPracticeMode(lesson.videoUrl ? 'video_beat' : 'pure_beat');
+    setLyricsChoice(
+      lesson.lyricsMode === 'karaoke_video' || lesson.karaokeVideoUrl
+        ? 'karaoke_video'
+        : 'text'
+    );
+    setActiveKaraokeUrl(lesson.karaokeVideoUrl || '');
+    setCustomKaraokeInputUrl('');
+    setKaraokeUploadFileName(null);
 
     kidsBeatEngine.setBpm(lesson.bpm || 90);
     kidsBeatEngine.setCustomBeatAudio(lesson.beatAudioUrl || null);
@@ -665,45 +688,191 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </div>
             )}
 
-            {/* Sing-along Lyrics Box with Big Clear Text */}
-            <div className="bg-emerald-50/80 p-4 rounded-2xl border-2 border-emerald-200">
-              <span className="text-xs font-black text-emerald-800 uppercase tracking-wide block mb-2">
-                🎤 Lời bài hát (Sing-Along Lyrics):
-              </span>
-              <div className="space-y-2 text-center py-2">
-                {lesson.lyrics.map((line, idx) => (
-                  <p
-                    key={idx}
-                    className="text-base sm:text-xl font-black text-zinc-800 hover:text-pink-600 transition"
-                  >
-                    "{line}"
-                  </p>
-                ))}
+            {/* Sing-along Lyrics Box with Big Clear Text OR Karaoke Video */}
+            <div className="bg-emerald-50/80 p-4 rounded-2xl border-2 border-emerald-200 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-black text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
+                    <Mic className="w-4 h-4 text-emerald-600" />
+                    <span>Nội dung thực hành:</span>
+                  </span>
+
+                  {/* 2 Choices: Text or Video Karaoke */}
+                  <div className="flex items-center bg-white p-1 rounded-xl border border-emerald-300 shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => setLyricsChoice('text')}
+                      className={`px-3 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 ${
+                        lyricsChoice === 'text'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-zinc-600 hover:text-emerald-700 hover:bg-emerald-50'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>📝 Chọn Text</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLyricsChoice('karaoke_video')}
+                      className={`px-3 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 ${
+                        lyricsChoice === 'karaoke_video'
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'text-zinc-600 hover:text-purple-700 hover:bg-purple-50'
+                      }`}
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      <span>🎬 Chọn Đăng Video</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  {lyricsChoice === 'karaoke_video' && (
+                    <span className="text-[10px] font-black text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
+                      Karaoke Mode 🌟
+                    </span>
+                  )}
+                  {!isStudentMode && (
+                    <button
+                      type="button"
+                      onClick={() => setShowKaraokeModal(true)}
+                      className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-900 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
+                      title="Tải video karaoke từ máy hoặc dán link YouTube"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Đăng / Đổi Video 🎥</span>
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {lyricsChoice === 'karaoke_video' ? (
+                // Display Karaoke Video
+                <div className="space-y-2">
+                  {activeKaraokeUrl ? (
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-purple-300 shadow-lg group flex items-center justify-center">
+                      {getYoutubeEmbedUrl(activeKaraokeUrl) ? (
+                        <iframe
+                          src={getYoutubeEmbedUrl(activeKaraokeUrl)!}
+                          title="Karaoke Video"
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={activeKaraokeUrl}
+                          controls
+                          loop
+                          playsInline
+                          className="w-full h-full object-contain bg-black"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center bg-purple-50 rounded-2xl border-2 border-dashed border-purple-300 space-y-2.5">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mx-auto text-2xl shadow-inner">
+                        🎬
+                      </div>
+                      <h4 className="text-sm font-black text-purple-950">
+                        Chưa có Video Karaoke có lời chạy
+                      </h4>
+                      <p className="text-xs text-purple-700">
+                        Tải file video từ máy tính hoặc dán link YouTube có chữ chạy để học sinh nhìn vào thực hành!
+                      </p>
+                      <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                        {!isStudentMode && (
+                          <button
+                            type="button"
+                            onClick={() => setShowKaraokeModal(true)}
+                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-md cursor-pointer transition flex items-center gap-1.5"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span>Đăng Video Karaoke Ngay</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setLyricsChoice('text')}
+                          className="px-4 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 cursor-pointer transition"
+                        >
+                          📝 Xem Lời dạng Text
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {activeKaraokeUrl && (
+                    <p className="text-[11px] font-bold text-center text-purple-800">
+                      📺 Hãy nhìn vào chữ chạy trên video karaoke và bấm Micro ở Bước 2 để thu âm nhé!
+                    </p>
+                  )}
+                </div>
+              ) : (
+                // Display Text Lyrics
+                <div className="space-y-2 text-center py-2">
+                  {lesson.lyrics.map((line, idx) => (
+                    <p
+                      key={idx}
+                      className="text-base sm:text-xl font-black text-zinc-800 hover:text-pink-600 transition"
+                    >
+                      "{line}"
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Quick Song Switcher for Grade 5 */}
-          <div className="bg-white rounded-3xl p-4 shadow-md border-3 border-yellow-300">
-            <span className="text-xs font-black text-amber-800 uppercase block mb-2">
-              🌟 Danh sách bài hát Chants lớp 5 (Select Assigned Song):
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {allLessons.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => onSelectLesson(l)}
-                  className={`px-3 py-1.5 rounded-2xl text-xs font-black transition cursor-pointer ${
-                    lesson.id === l.id
-                      ? 'bg-amber-400 text-amber-950 shadow-md scale-105'
-                      : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-900'
-                  }`}
-                >
-                  🎵 {l.title}
-                </button>
-              ))}
+          {isStudentMode ? (
+            /* Student Only: Show ONLY the active assigned chant */
+            <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-pink-50 rounded-3xl p-4 shadow-md border-3 border-yellow-300 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center font-black text-xl shadow-sm">
+                  🎯
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-amber-800 uppercase block">
+                    Bài hát em đang thực hiện (Your Assigned Chant):
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-pink-700">
+                    🎵 {lesson.title}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <span className="bg-pink-100 text-pink-700 text-xs font-black px-3 py-1 rounded-full border border-pink-200 block mb-0.5">
+                  {lesson.gradeLevel || 'Grade 5'}
+                </span>
+                <span className="text-[10px] text-zinc-500 font-bold block">
+                  Nhịp: {currentBpm} BPM
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Teacher Mode: Show full list of songs to switch and test */
+            <div className="bg-white rounded-3xl p-4 shadow-md border-3 border-yellow-300">
+              <span className="text-xs font-black text-amber-800 uppercase block mb-2">
+                🌟 Danh sách bài hát Chants lớp 5 (Chế độ Giáo viên):
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {allLessons.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => onSelectLesson(l)}
+                    className={`px-3 py-1.5 rounded-2xl text-xs font-black transition cursor-pointer ${
+                      lesson.id === l.id
+                        ? 'bg-amber-400 text-amber-950 shadow-md scale-105'
+                        : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-900'
+                    }`}
+                  >
+                    🎵 {l.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* RIGHT COLUMN: Step 2 & 3 - Beat Practice, Recording & SUBMIT (6 Cols) */}
@@ -1189,6 +1358,104 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
 
             <button
               onClick={() => setShowVideoInputModal(false)}
+              className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP ĐĂNG VIDEO KARAOKE CÓ LỜI CHẠY */}
+      {showKaraokeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border-4 border-purple-400 p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+              <h3 className="text-base font-black text-zinc-900 flex items-center gap-2">
+                <Video className="w-5 h-5 text-purple-600" />
+                <span>Đăng Video Karaoke Có Lời Chạy</span>
+              </h3>
+              <button
+                onClick={() => setShowKaraokeModal(false)}
+                className="text-zinc-400 hover:text-zinc-600 text-lg font-black cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Option A: Upload local video file */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-zinc-700 block">
+                Cách 1: Tải video karaoke từ máy tính (MP4, WebM):
+              </label>
+              <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
+                <Upload className="w-6 h-6 text-purple-600 mb-1" />
+                <span className="text-xs font-bold text-zinc-700">
+                  {karaokeUploadFileName || 'Chọn file video karaoke từ máy'}
+                </span>
+                <span className="text-[10px] text-zinc-500">Hỗ trợ file MP4, WebM</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setActiveKaraokeUrl(url);
+                      setKaraokeUploadFileName(file.name);
+                      setLyricsChoice('karaoke_video');
+                      if (onUpdateLesson) {
+                        onUpdateLesson({
+                          ...lesson,
+                          lyricsMode: 'karaoke_video',
+                          karaokeVideoUrl: url,
+                        });
+                      }
+                      setShowKaraokeModal(false);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Option B: Enter video URL / YouTube link */}
+            <div className="space-y-1.5 pt-2 border-t border-zinc-100">
+              <label className="text-xs font-black text-zinc-700 block">
+                Cách 2: Hoặc dán link video / YouTube Karaoke có lời:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=... hoặc link .mp4"
+                  value={customKaraokeInputUrl}
+                  onChange={(e) => setCustomKaraokeInputUrl(e.target.value)}
+                  className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-purple-500"
+                />
+                <button
+                  onClick={() => {
+                    if (customKaraokeInputUrl.trim()) {
+                      setActiveKaraokeUrl(customKaraokeInputUrl.trim());
+                      setLyricsChoice('karaoke_video');
+                      if (onUpdateLesson) {
+                        onUpdateLesson({
+                          ...lesson,
+                          lyricsMode: 'karaoke_video',
+                          karaokeVideoUrl: customKaraokeInputUrl.trim(),
+                        });
+                      }
+                      setShowKaraokeModal(false);
+                    }
+                  }}
+                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm"
+                >
+                  Áp dụng
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowKaraokeModal(false)}
               className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
             >
               Đóng
