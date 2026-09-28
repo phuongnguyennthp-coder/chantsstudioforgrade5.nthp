@@ -28,6 +28,9 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Retrieve teacher API key if set to allow seamless student evaluation without manual key entry
+  const teacherApiKey = localStorage.getItem('gemini_api_key')?.trim() || '';
+
   // Generate lightweight base64 payload of lesson data
   const payload = {
     id: lesson.id,
@@ -38,8 +41,11 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
     videoUrl: lesson.videoUrl,
     beatAudioUrl: lesson.beatAudioUrl,
     videoType: lesson.videoType,
+    lyricsMode: lesson.lyricsMode || (lesson.videoUrl ? 'karaoke_video' : 'text'),
     lyrics: lesson.lyrics,
+    karaokeVideoUrl: lesson.karaokeVideoUrl || lesson.videoUrl,
     missionTask: lesson.missionTask,
+    teacherApiKey: teacherApiKey || undefined,
   };
 
   const jsonStr = JSON.stringify(payload);
