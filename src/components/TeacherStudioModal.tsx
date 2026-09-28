@@ -565,10 +565,26 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
           {/* 1. Song Video Section */}
           <div className="bg-pink-50/60 p-4 rounded-2xl border-2 border-pink-200 space-y-3">
-            <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
-              <Video className="w-4 h-4 text-pink-600" />
-              <span>1. Video Bài Hát Mẫu Cho Học Sinh Xem (Song Video):</span>
-            </span>
+            <div className="flex items-center justify-between flex-wrap gap-1">
+              <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-pink-600" />
+                <span>1. Video Bài Hát Mẫu (Song Video):</span>
+              </span>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                📱 Xem được trên Điện Thoại & Tablet
+              </span>
+            </div>
+
+            {/* Device Compatibility Tip */}
+            <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-300 text-xs text-amber-900 flex items-start gap-2">
+              <span className="text-base leading-none">💡</span>
+              <div className="text-[11px] leading-tight space-y-0.5">
+                <span className="font-bold text-amber-950 block">Để học sinh xem được video trên mọi thiết bị (Điện thoại, iPad/Tablet, Máy tính):</span>
+                <span className="text-zinc-600 block">
+                  Khuyên dùng <b>Link YouTube</b> hoặc <b>Link Google Drive</b> (chọn quyền <i>"Bất kỳ ai có đường liên kết đều có thể xem"</i>). Nếu tải file từ máy tính thì video chỉ xem được trên chính máy này.
+                </span>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Option A: Upload local video */}
@@ -577,7 +593,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 <span className="text-xs font-bold text-zinc-700">
                   {videoFileName ? videoFileName : 'Tải video từ máy (MP4, WebM)'}
                 </span>
-                <span className="text-[10px] text-zinc-400">Kéo thả file hoặc nhấn để chọn</span>
+                <span className="text-[10px] text-zinc-400">Xem thử trên máy tính giáo viên</span>
                 <input
                   type="file"
                   accept="video/*"
@@ -588,12 +604,13 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
               {/* Option B: Enter URL */}
               <div className="flex flex-col justify-center space-y-1">
-                <label className="text-[11px] font-bold text-zinc-600">
-                  Hoặc dán link video / YouTube:
+                <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
+                  <span>Hoặc dán Link YouTube / Google Drive:</span>
+                  <span className="text-[10px] text-pink-600 font-extrabold">Khuyên dùng ⭐</span>
                 </label>
                 <input
                   type="url"
-                  placeholder="https://www.youtube.com/watch?v=... hoặc link .mp4"
+                  placeholder="Link YouTube hoặc link Google Drive (hoặc file .mp4)"
                   value={customVideoUrl}
                   onChange={(e) => {
                     setCustomVideoUrl(e.target.value);
@@ -604,7 +621,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   className="w-full text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-pink-500 bg-white font-mono"
                 />
                 <span className="text-[10px] text-zinc-400">
-                  (Để trống sẽ dùng video hoạt hình mẫu vui nhộn của hệ thống)
+                  (Hỗ trợ YouTube, YouTube Shorts, Google Drive, Dropbox)
                 </span>
               </div>
             </div>
@@ -822,14 +839,15 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     </label>
                   </div>
 
-                  {/* Karaoke YouTube Link */}
+                  {/* Karaoke YouTube or Google Drive Link */}
                   <div>
-                    <label className="text-[11px] font-bold text-zinc-700 block mb-1">
-                      Hoặc dán Link YouTube Karaoke:
+                    <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between mb-1">
+                      <span>Dán Link YouTube / Google Drive:</span>
+                      <span className="text-[10px] text-purple-600 font-extrabold">Khuyên dùng ⭐</span>
                     </label>
                     <input
                       type="url"
-                      placeholder="https://www.youtube.com/watch?v=... (Karaoke Sing-Along)"
+                      placeholder="Link YouTube hoặc Google Drive Karaoke"
                       value={karaokeCustomUrl}
                       onChange={(e) => {
                         setKaraokeCustomUrl(e.target.value);
@@ -838,7 +856,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                       className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-2.5 rounded-xl border border-zinc-300 focus:border-purple-500 outline-none"
                     />
                     <span className="text-[10px] text-zinc-500 block mt-1">
-                      Hỗ trợ video YouTube có chữ chạy karaoke hoặc file video trực tuyến.
+                      Hỗ trợ YouTube, YouTube Shorts, Google Drive. Xem mượt 100% trên Điện thoại & Tablet!
                     </span>
                   </div>
                 </div>
