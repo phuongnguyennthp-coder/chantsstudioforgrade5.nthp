@@ -38,8 +38,9 @@ interface StudentMissionViewProps {
   lesson: SongLesson;
   allLessons: SongLesson[];
   onSelectLesson: (lesson: SongLesson) => void;
-  onOpenTeacherStudio: () => void;
-  onOpenApiKeyModal: () => void;
+  onOpenTeacherStudio?: () => void;
+  onOpenApiKeyModal?: () => void;
+  isStudentMode?: boolean;
 }
 
 // Helper to extract YouTube embed URL if input is a YouTube video link
@@ -57,6 +58,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   onSelectLesson,
   onOpenTeacherStudio,
   onOpenApiKeyModal,
+  isStudentMode = false,
 }) => {
   // Step 1: Video State & Custom Video Upload/URL
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(lesson.videoUrl || '');
@@ -333,20 +335,17 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     document.body.removeChild(a);
   };
 
-  // SUBMIT HANDLER: adheres strictly to AI_INSTRUCTIONS.md (model fallback, error handling, status tracking)
+  // SUBMIT HANDLER: evaluates chant with Gemini fallback or smart pedagogical engine
   const handleSubmit = async () => {
-    const userApiKey = localStorage.getItem('gemini_api_key')?.trim() || '';
-    if (!userApiKey) {
-      setSubmitState('error');
-      setApiErrorMessage('Chưa có Gemini API Key. Vui lòng mở "Settings (API Key)" trên Header để nhập key sử dụng.');
-      onOpenApiKeyModal();
-      return;
-    }
-
     setIsEvaluating(true);
     setSubmitState('evaluating');
     setApiErrorMessage(null);
-    setCurrentEvaluatingModel('gemini-3-flash-preview');
+
+    const userApiKey = localStorage.getItem('gemini_api_key')?.trim() || '';
+    const initialModel = userApiKey
+      ? (localStorage.getItem('gemini_model')?.trim() || 'gemini-2.0-flash')
+      : 'RoboBuddy Smart Engine';
+    setCurrentEvaluatingModel(initialModel);
 
     const rhythmScore = Math.floor(Math.random() * 20) + 80;
     const pitchScore = Math.floor(Math.random() * 20) + 80;
@@ -495,13 +494,15 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={onOpenTeacherStudio}
-              className="px-3.5 py-2 rounded-2xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-300 text-zinc-700 text-xs font-bold transition cursor-pointer shadow-sm flex items-center gap-1.5"
-              title="Teacher Mode to upload new video songs"
-            >
-              <span>Teacher Studio 🍎</span>
-            </button>
+            {!isStudentMode && onOpenTeacherStudio && (
+              <button
+                onClick={onOpenTeacherStudio}
+                className="px-3.5 py-2 rounded-2xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-300 text-zinc-700 text-xs font-bold transition cursor-pointer shadow-sm flex items-center gap-1.5"
+                title="Teacher Mode to upload new video songs"
+              >
+                <span>Teacher Studio 🍎</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -585,8 +586,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 </div>
               </div>
 
-              {/* Direct Video Upload Trigger (available in video mode) */}
-              {practiceMode === 'video_beat' && (
+              {/* Direct Video Upload Trigger (available ONLY in teacher mode) */}
+              {!isStudentMode && practiceMode === 'video_beat' && (
                 <button
                   onClick={() => setShowVideoInputModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-black border border-emerald-300 shadow-sm cursor-pointer transition"
@@ -849,34 +850,38 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {/* Upload Beat or Video */}
-                  <label className="text-[11px] text-pink-700 font-bold flex items-center gap-1 bg-white hover:bg-pink-50 px-2 py-1 rounded-lg border border-pink-300 cursor-pointer shadow-sm">
-                    <Upload className="w-3 h-3" />
-                    <Video className="w-3 h-3" />
-                    <span>Tải file Beat / Video</span>
-                    <input
-                      type="file"
-                      accept="audio/*,video/*"
-                      onChange={handleDirectBeatUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  {!isStudentMode && (
+                    <>
+                      {/* Upload Beat or Video */}
+                      <label className="text-[11px] text-pink-700 font-bold flex items-center gap-1 bg-white hover:bg-pink-50 px-2 py-1 rounded-lg border border-pink-300 cursor-pointer shadow-sm">
+                        <Upload className="w-3 h-3" />
+                        <Video className="w-3 h-3" />
+                        <span>Tải file Beat / Video</span>
+                        <input
+                          type="file"
+                          accept="audio/*,video/*"
+                          onChange={handleDirectBeatUpload}
+                          className="hidden"
+                        />
+                      </label>
 
-                  {/* Extract Beat from Lesson Video */}
-                  {lesson.videoUrl && (
-                    <button
-                      onClick={() => handleExtractBeatFromLessonVideo('vocal_reduced')}
-                      disabled={isExtractingBeat}
-                      className="text-[11px] text-indigo-700 font-bold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-lg border border-indigo-200 cursor-pointer shadow-sm transition"
-                      title="Trích xuất âm thanh/beat từ video bài học ở Bước 1"
-                    >
-                      {isExtractingBeat ? (
-                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
-                      ) : (
-                        <Sparkles className="w-3 h-3 text-amber-500" />
+                      {/* Extract Beat from Lesson Video */}
+                      {lesson.videoUrl && (
+                        <button
+                          onClick={() => handleExtractBeatFromLessonVideo('vocal_reduced')}
+                          disabled={isExtractingBeat}
+                          className="text-[11px] text-indigo-700 font-bold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-lg border border-indigo-200 cursor-pointer shadow-sm transition"
+                          title="Trích xuất âm thanh/beat từ video bài học ở Bước 1"
+                        >
+                          {isExtractingBeat ? (
+                            <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                          ) : (
+                            <Sparkles className="w-3 h-3 text-amber-500" />
+                          )}
+                          <span>Lấy Beat từ Video bài hát</span>
+                        </button>
                       )}
-                      <span>Lấy Beat từ Video bài hát</span>
-                    </button>
+                    </>
                   )}
 
                   {beatFileName && (
