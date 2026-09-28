@@ -286,10 +286,24 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
       .filter((l) => l.length > 0);
 
     const activeKaraokeUrl = karaokeVideoUrl || karaokeCustomUrl.trim();
+    const explicitVideo = videoFileUrl || customVideoUrl.trim();
 
     if (editingLessonId) {
       // Update existing lesson
       const original = lessons.find((l) => l.id === editingLessonId);
+      const finalVideo =
+        explicitVideo ||
+        activeKaraokeUrl ||
+        original?.videoUrl ||
+        original?.karaokeVideoUrl ||
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      const finalKaraoke =
+        activeKaraokeUrl ||
+        explicitVideo ||
+        original?.karaokeVideoUrl ||
+        original?.videoUrl ||
+        finalVideo;
+
       const updatedLesson: SongLesson = {
         id: editingLessonId,
         title: title.trim(),
@@ -297,14 +311,10 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
         category,
         bpm,
         videoType: 'file',
-        videoUrl:
-          videoFileUrl ||
-          customVideoUrl.trim() ||
-          original?.videoUrl ||
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        videoUrl: finalVideo,
         beatAudioUrl: beatFileUrl || original?.beatAudioUrl,
         lyricsMode,
-        karaokeVideoUrl: activeKaraokeUrl || original?.karaokeVideoUrl || undefined,
+        karaokeVideoUrl: finalKaraoke,
         lyrics:
           lyricsArray.length > 0
             ? lyricsArray
@@ -325,6 +335,12 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
       setSharingLesson(updatedLesson);
     } else {
       // Create new lesson
+      const finalVideo =
+        explicitVideo ||
+        activeKaraokeUrl ||
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      const finalKaraoke = activeKaraokeUrl || explicitVideo || finalVideo;
+
       const newLesson: SongLesson = {
         id: `lesson-${Date.now()}`,
         title: title.trim(),
@@ -332,13 +348,10 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
         category,
         bpm,
         videoType: 'file',
-        videoUrl:
-          videoFileUrl ||
-          customVideoUrl.trim() ||
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        videoUrl: finalVideo,
         beatAudioUrl: beatFileUrl || undefined,
         lyricsMode,
-        karaokeVideoUrl: activeKaraokeUrl || undefined,
+        karaokeVideoUrl: finalKaraoke,
         lyrics:
           lyricsArray.length > 0
             ? lyricsArray
