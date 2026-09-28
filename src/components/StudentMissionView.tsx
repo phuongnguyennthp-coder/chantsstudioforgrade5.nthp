@@ -27,6 +27,7 @@ import {
   Scissors,
   FileText,
   X,
+  Trash2,
 } from 'lucide-react';
 import { SongLesson, RoboBuddyFeedback } from '../types/kidsMusic';
 import { kidsBeatEngine } from '../audio/kidsBeatEngine';
@@ -87,6 +88,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
   const [recordTimerSeconds, setRecordTimerSeconds] = useState(0);
   const [liveMicLevel, setLiveMicLevel] = useState<number>(0);
+  const recordingSectionRef = useRef<HTMLDivElement>(null);
 
   // Student Identity for Grade 5
   const [studentName, setStudentName] = useState('Alex');
@@ -98,8 +100,9 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [currentEvaluatingModel, setCurrentEvaluatingModel] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<RoboBuddyFeedback | null>(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [latestSubmissionId, setLatestSubmissionId] = useState<string | null>(null);
   const [submissionHistory, setSubmissionHistory] = useState<
-    Array<{ songTitle: string; score: number; stars: number; badge: string; time: string }>
+    Array<{ id: string; songTitle: string; score: number; stars: number; badge: string; time: string }>
   >([]);
 
   // Practice mode: 'video_beat' (sing with video) or 'pure_beat' (pure beat without video)
@@ -420,6 +423,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setIsEvaluating(false);
 
     if (result.success && result.data) {
+      const submissionId = 'sub_' + Date.now();
+      setLatestSubmissionId(submissionId);
       setSubmitState('completed');
       setFeedback(result.data);
       setShowFeedbackModal(true);
@@ -427,6 +432,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
       // Record to submission history
       setSubmissionHistory((prev) => [
         {
+          id: submissionId,
           songTitle: lesson.title,
           score: result.data!.score,
           stars: result.data!.stars,
@@ -448,6 +454,47 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
       setSubmitState('error');
       setApiErrorMessage(result.error || 'Đã dừng do lỗi từ API.');
     }
+  };
+
+  // Retention, Try Again & Deletion Handlers for Student Results
+  const handleKeepResult = () => {
+    setShowFeedbackModal(false);
+  };
+
+  const handleTryAgain = () => {
+    // 1. Remove latest submission from history so the unsatisfactory score is discarded
+    if (latestSubmissionId) {
+      setSubmissionHistory((prev) => prev.filter((item) => item.id !== latestSubmissionId));
+    }
+    // 2. Reset recording so student can record anew
+    kidsBeatEngine.stopStudentRecordingPlayback();
+    setIsPlayingRecording(false);
+    setRecordedUrl(null);
+    setSubmitState('idle');
+    setShowFeedbackModal(false);
+
+    // 3. Scroll smoothly back to Microphone area (Step 2)
+    setTimeout(() => {
+      recordingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  };
+
+  const handleDeleteLatestResult = () => {
+    if (latestSubmissionId) {
+      setSubmissionHistory((prev) => prev.filter((item) => item.id !== latestSubmissionId));
+    }
+    setShowFeedbackModal(false);
+    setSubmitState('idle');
+  };
+
+  const handleDeleteSubmission = (id: string) => {
+    setSubmissionHistory((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleKeepBestResultOnly = () => {
+    if (submissionHistory.length <= 1) return;
+    const best = [...submissionHistory].sort((a, b) => b.score - a.score)[0];
+    setSubmissionHistory([best]);
   };
 
   // Pure canvas confetti celebration burst
@@ -1112,7 +1159,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             </div>
 
             {/* Step B: Microphone Recording Station */}
-            <div className="bg-yellow-50 p-4 rounded-2xl border-2 border-yellow-300 flex flex-col items-center text-center space-y-3">
+            <div ref={recordingSectionRef} className="bg-yellow-50 p-4 rounded-2xl border-2 border-yellow-300 flex flex-col items-center text-center space-y-3">
               <span className="text-xs font-black text-amber-900 uppercase flex items-center gap-1.5">
                 <Mic className="w-3.5 h-3.5 text-amber-600" />
                 <span>B. Micro Thu Lại Giọng Hát Của Học Sinh:</span>
@@ -1307,28 +1354,73 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             </div>
           </div>
 
-          {/* Submission Badges & History if any */}
+          {/* Submission Badges & History with Delete & Keep Best Options */}
           {submissionHistory.length > 0 && (
-            <div className="bg-white p-4 rounded-3xl border-2 border-zinc-200 shadow-sm space-y-2">
-              <span className="text-xs font-black text-zinc-700 uppercase block">
-                🏆 Lịch sử nộp bài phiên này:
-              </span>
-              <div className="space-y-1.5">
-                {submissionHistory.map((item, idx) => (
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border-2 border-pink-200 shadow-sm space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-black text-zinc-800 uppercase flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-pink-600" />
+                  <span>🏆 Kết quả đã nộp phiên này ({submissionHistory.length}):</span>
+                </span>
+                {submissionHistory.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleKeepBestResultOnly}
+                      className="text-[11px] font-black text-pink-700 bg-pink-100 hover:bg-pink-200 px-2.5 py-1 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-sm"
+                      title="Chỉ giữ lại 1 kết quả có số điểm cao nhất"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      <span>Chỉ giữ kết quả cao nhất</span>
+                    </button>
+                    <button
+                      onClick={() => setSubmissionHistory([])}
+                      className="text-[11px] font-bold text-zinc-500 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-xl transition cursor-pointer"
+                      title="Xoá tất cả lịch sử nộp bài"
+                    >
+                      Xoá hết
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {submissionHistory.map((item) => (
                   <div
-                    key={idx}
-                    className="flex items-center justify-between text-xs bg-pink-50/60 p-2 rounded-xl border border-pink-200"
+                    key={item.id}
+                    className="flex items-center justify-between text-xs bg-pink-50/70 hover:bg-pink-50 p-2.5 rounded-2xl border border-pink-200 gap-2 transition"
                   >
-                    <span className="font-bold text-zinc-800">
-                      🎵 {item.songTitle} ({item.time})
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-pink-600">{item.score} điểm</span>
-                      <span className="font-bold text-amber-600">{'⭐'.repeat(item.stars)}</span>
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="font-bold text-zinc-800 truncate">
+                        🎵 {item.songTitle} <span className="text-[11px] text-zinc-400 font-normal">({item.time})</span>
+                      </span>
+                      <span className="font-black text-pink-700 bg-white px-2 py-0.5 rounded-lg border border-pink-200 shadow-xs">
+                        {item.score} điểm
+                      </span>
+                      <span className="font-bold text-amber-500 tracking-wider">
+                        {'⭐'.repeat(item.stars)}
+                      </span>
+                      {item.badge && (
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-lg border border-purple-200 truncate hidden sm:inline">
+                          {item.badge}
+                        </span>
+                      )}
                     </div>
+
+                    <button
+                      onClick={() => handleDeleteSubmission(item.id)}
+                      title="Xoá kết quả này (nếu chưa vừa ý)"
+                      className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-100 transition cursor-pointer flex items-center gap-1 shrink-0 text-[11px] font-bold"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Xoá</span>
+                    </button>
                   </div>
                 ))}
               </div>
+
+              <p className="text-[11px] text-zinc-500 font-medium italic">
+                💡 Em có thể bấm nút <b>"Xoá"</b> để bỏ các lượt điểm chưa cao, chỉ giữ lại kết quả tốt nhất mà em mong muốn!
+              </p>
             </div>
           )}
         </div>
@@ -1586,15 +1678,57 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </div>
             )}
 
-            {/* Modal Action Button */}
-            <div className="pt-1">
-              <button
-                onClick={() => setShowFeedbackModal(false)}
-                className="w-full py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black text-sm sm:text-base shadow-lg shadow-green-300 cursor-pointer transition transform active:scale-95"
-              >
-                Continue Practice! 🎉 (Tiếp tục luyện tập)
-              </button>
-            </div>
+            {/* Action Buttons: Giữ kết quả / Try Again (Làm lại) / Xoá kết quả này */}
+            {feedback.headline === 'Try again! 🎈' && !recordedUrl ? (
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setShowFeedbackModal(false);
+                    setTimeout(() => {
+                      recordingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 150);
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-sm sm:text-base shadow-lg shadow-amber-300 cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Mic className="w-5 h-5" />
+                  <span>Em đi thu âm ngay! 🎤 (Go to Record)</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-2">
+                {/* 1. Primary: Keep this result */}
+                <button
+                  onClick={handleKeepResult}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black text-sm sm:text-base shadow-lg shadow-green-200 cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  <span>⭐ Giữ kết quả này (Hoàn tất)</span>
+                </button>
+
+                {/* 2. Secondary Row: Try Again & Delete */}
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {/* Try Again */}
+                  <button
+                    onClick={handleTryAgain}
+                    className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white font-black text-xs sm:text-sm shadow-md cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-1.5"
+                    title="Chưa vừa ý? Xoá điểm này và thu âm lại để lấy điểm cao hơn!"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Try Again! 🔄</span>
+                  </button>
+
+                  {/* Delete this result */}
+                  <button
+                    onClick={handleDeleteLatestResult}
+                    className="py-2.5 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 hover:border-rose-300 font-black text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5"
+                    title="Xoá kết quả này khỏi lịch sử"
+                  >
+                    <Trash2 className="w-4 h-4 text-rose-500" />
+                    <span>Xoá điểm này 🗑️</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
