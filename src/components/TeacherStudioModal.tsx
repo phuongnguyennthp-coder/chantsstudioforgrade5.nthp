@@ -16,9 +16,11 @@ import {
   Scissors,
   AlertCircle,
   Volume2,
+  Share2,
 } from 'lucide-react';
 import { SongLesson } from '../types/kidsMusic';
 import { extractAudioFromMedia } from '../utils/audioExtractor';
+import { ShareLessonModal } from './ShareLessonModal';
 
 interface TeacherStudioModalProps {
   isOpen: boolean;
@@ -64,6 +66,9 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
   // Preview Audio state
   const [previewAudio, setPreviewAudio] = useState<HTMLAudioElement | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+
+  // Heyzine Share modal state
+  const [sharingLesson, setSharingLesson] = useState<SongLesson | null>(null);
 
   if (!isOpen) return null;
 
@@ -218,7 +223,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
     onAddLesson(newLesson);
     onSelectAndAssign(newLesson);
-    onClose();
+    setSharingLesson(newLesson);
   };
 
   return (
@@ -271,7 +276,16 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setSharingLesson(l)}
+                    className="px-2.5 py-1 rounded-lg bg-pink-500 hover:bg-pink-600 text-white text-[11px] font-bold cursor-pointer transition shadow flex items-center gap-1"
+                    title="Giao bài cho học sinh / Xuất link Heyzine"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    <span>Xuất Link Heyzine</span>
+                  </button>
                   <button
                     onClick={() => {
                       onSelectAndAssign(l);
@@ -577,6 +591,18 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Heyzine Share Link / Embed Code Modal */}
+      {sharingLesson && (
+        <ShareLessonModal
+          isOpen={!!sharingLesson}
+          onClose={() => {
+            setSharingLesson(null);
+            onClose();
+          }}
+          lesson={sharingLesson}
+        />
+      )}
     </div>
   );
 };
