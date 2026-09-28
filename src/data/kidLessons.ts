@@ -9,6 +9,8 @@ export const INITIAL_LESSONS: SongLesson[] = [
     bpm: 86,
     videoType: 'animated',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    lyricsMode: 'karaoke_video',
+    karaokeVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     lyrics: [
       'If you ever find yourself stuck in the middle of the sea,',
       "I'll sail the world to find you.",
@@ -30,6 +32,7 @@ export const INITIAL_LESSONS: SongLesson[] = [
     bpm: 92,
     videoType: 'animated',
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+    lyricsMode: 'text',
     lyrics: [
       'Love in your eyes, sitting silent by my side,',
       'Going on a day so much to do.',
