@@ -96,6 +96,11 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     Array<{ songTitle: string; score: number; stars: number; badge: string; time: string }>
   >([]);
 
+  // Practice mode: 'video_beat' (sing with video) or 'pure_beat' (pure beat without video)
+  const [practiceMode, setPracticeMode] = useState<'video_beat' | 'pure_beat'>(() => {
+    return lesson.videoUrl ? 'video_beat' : 'pure_beat';
+  });
+
   // Sync state when active lesson changes
   useEffect(() => {
     setActiveVideoUrl(lesson.videoUrl || '');
@@ -105,6 +110,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setRecordedUrl(null);
     setIsRecording(false);
     setIsVideoPlaying(false);
+    setPracticeMode(lesson.videoUrl ? 'video_beat' : 'pure_beat');
 
     kidsBeatEngine.setBpm(lesson.bpm || 90);
     kidsBeatEngine.setCustomBeatAudio(lesson.beatAudioUrl || null);
@@ -277,6 +283,12 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
           clearInterval(timer);
           kidsBeatEngine.startRecording().then((ok) => {
             setIsRecording(ok);
+            // In video beat mode, play video in sync so student watches video while singing
+            if (practiceMode === 'video_beat' && videoRef.current) {
+              videoRef.current.currentTime = 0;
+              videoRef.current.play().catch((e) => console.log('Video sync play error', e));
+              setIsVideoPlaying(true);
+            }
           });
           return null;
         }
@@ -289,6 +301,11 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     const url = kidsBeatEngine.stopRecording();
     setIsRecording(false);
     setRecordedUrl(url || 'recorded-ready');
+    // Stop video playback synchronously
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
   };
 
   const handlePlayRecording = () => {
@@ -511,100 +528,152 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
         </div>
       </div>
 
+      {/* PRACTICE MODE SELECTOR FOR ELEMENTARY STUDENTS */}
+      <div className="flex items-center justify-center gap-2 p-2 bg-gradient-to-r from-pink-100 via-yellow-100 to-emerald-100 rounded-3xl border-3 border-pink-300 shadow-md flex-wrap">
+        <span className="text-xs font-black text-zinc-700 px-2 flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>Chế độ thực hành cho học sinh:</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => setPracticeMode('video_beat')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition cursor-pointer transform active:scale-95 ${
+            practiceMode === 'video_beat'
+              ? 'bg-pink-600 text-white shadow-lg shadow-pink-300 scale-105'
+              : 'bg-white hover:bg-pink-50 text-zinc-700 border-2 border-pink-200'
+          }`}
+        >
+          <Video className="w-4 h-4" />
+          <span>🎬 Video có Beat nhạc</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPracticeMode('pure_beat')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition cursor-pointer transform active:scale-95 ${
+            practiceMode === 'pure_beat'
+              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-300 scale-105'
+              : 'bg-white hover:bg-emerald-50 text-zinc-700 border-2 border-emerald-200'
+          }`}
+        >
+          <Music className="w-4 h-4" />
+          <span>🎵 Chỉ dùng Beat nhạc (Thuần Beat)</span>
+        </button>
+      </div>
+
       {/* Main Learning & Practice Playground: 2 Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT COLUMN: Step 1 - Watch Song Video (6 Cols) */}
+        {/* LEFT COLUMN: Video with Beat OR Pure Beat Lyrics (6 Cols) */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="bg-white rounded-3xl p-5 shadow-xl border-4 border-emerald-400">
-            {/* Step 1 Title + Direct Upload Video Button */}
-            <div className="flex items-center justify-between pb-3 border-b-2 border-emerald-100 mb-3 flex-wrap gap-2">
+          <div className="bg-white rounded-3xl p-5 shadow-xl border-4 border-emerald-400 space-y-4">
+            {/* Step 1 Title */}
+            <div className="flex items-center justify-between pb-3 border-b-2 border-emerald-100 flex-wrap gap-2">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-full bg-emerald-500 text-white font-black text-lg flex items-center justify-center shadow">
                   1
                 </span>
                 <div>
                   <h2 className="text-lg font-black text-emerald-800">
-                    Xem Video Bài Hát 📺
+                    {practiceMode === 'video_beat'
+                      ? 'Xem Video Bài Hát 📺'
+                      : 'Lời Bài Hát & Tiết Tấu Chants 🎵'}
                   </h2>
                   <span className="text-[11px] font-bold text-zinc-500">
-                    Watch & Listen to the Song Video
+                    {practiceMode === 'video_beat'
+                      ? 'Watch & Sing Along with Video'
+                      : 'Sing Along with Rhythm (Pure Beat Mode)'}
                   </span>
                 </div>
               </div>
 
-              {/* Direct Video Upload Trigger */}
-              <button
-                onClick={() => setShowVideoInputModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-black border border-emerald-300 shadow-sm cursor-pointer transition"
-                title="Tải video từ máy tính hoặc dán link YouTube"
-              >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Đổi / Tải Video 🎥</span>
-              </button>
-            </div>
-
-            {/* Video Player Box */}
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-emerald-300 shadow-inner group flex items-center justify-center">
-              {youtubeEmbedUrl ? (
-                // YouTube Iframe Embed Player
-                <iframe
-                  src={youtubeEmbedUrl}
-                  title={lesson.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : activeVideoUrl ? (
-                // HTML5 Video Player with controls
-                <video
-                  ref={videoRef}
-                  src={activeVideoUrl}
-                  controls
-                  loop
-                  playsInline
-                  onPlay={() => setIsVideoPlaying(true)}
-                  onPause={() => setIsVideoPlaying(false)}
-                  className="w-full h-full object-contain bg-black"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-300 to-green-400 p-6 text-center">
-                  <Music className="w-16 h-16 text-white drop-shadow animate-bounce mb-2" />
-                  <span className="text-lg font-black text-white drop-shadow">
-                    {lesson.title}
-                  </span>
-                  <span className="text-xs font-bold text-white/90">
-                    ChantsStudio for Grade 5
-                  </span>
-                </div>
+              {/* Direct Video Upload Trigger (available in video mode) */}
+              {practiceMode === 'video_beat' && (
+                <button
+                  onClick={() => setShowVideoInputModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-black border border-emerald-300 shadow-sm cursor-pointer transition"
+                  title="Tải video từ máy tính hoặc dán link YouTube"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Đổi / Tải Video 🎥</span>
+                </button>
               )}
             </div>
 
-            {/* Video File Name Notice if custom uploaded */}
-            {videoFileName && (
-              <div className="mt-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center justify-between">
-                <span>📹 Đang phát video tải lên: {videoFileName}</span>
-                <button
-                  onClick={() => {
-                    setActiveVideoUrl(lesson.videoUrl || '');
-                    setVideoFileName(null);
-                  }}
-                  className="text-xs text-rose-600 hover:underline cursor-pointer"
-                >
-                  Khôi phục mặc định
-                </button>
+            {/* Video Player: ONLY DISPLAYED IF IN VIDEO BEAT MODE */}
+            {practiceMode === 'video_beat' ? (
+              <>
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-emerald-300 shadow-inner group flex items-center justify-center">
+                  {youtubeEmbedUrl ? (
+                    // YouTube Iframe Embed Player
+                    <iframe
+                      src={youtubeEmbedUrl}
+                      title={lesson.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : activeVideoUrl ? (
+                    // HTML5 Video Player with controls
+                    <video
+                      ref={videoRef}
+                      src={activeVideoUrl}
+                      controls
+                      loop
+                      playsInline
+                      onPlay={() => setIsVideoPlaying(true)}
+                      onPause={() => setIsVideoPlaying(false)}
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-300 to-green-400 p-6 text-center">
+                      <Music className="w-16 h-16 text-white drop-shadow animate-bounce mb-2" />
+                      <span className="text-lg font-black text-white drop-shadow">
+                        {lesson.title}
+                      </span>
+                      <span className="text-xs font-bold text-white/90">
+                        ChantsStudio for Grade 5
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Video File Name Notice if custom uploaded */}
+                {videoFileName && (
+                  <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center justify-between">
+                    <span>📹 Đang phát video: {videoFileName}</span>
+                    <button
+                      onClick={() => {
+                        setActiveVideoUrl(lesson.videoUrl || '');
+                        setVideoFileName(null);
+                      }}
+                      className="text-xs text-rose-600 hover:underline cursor-pointer"
+                    >
+                      Khôi phục mặc định
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              // Pure Beat Mode Header Banner
+              <div className="bg-gradient-to-r from-emerald-100 to-teal-100 p-4 rounded-2xl border-2 border-emerald-300 text-center">
+                <span className="text-sm font-black text-emerald-900 block">
+                  🥁 Chế độ tập trung vào Nhịp điệu & Lời ca
+                </span>
+                <span className="text-xs font-medium text-emerald-700 mt-1 block">
+                  Khung video đã được ẩn để em hoàn toàn hòa mình vào tiếng trống và nhịp phách!
+                </span>
               </div>
             )}
 
             {/* Sing-along Lyrics Box with Big Clear Text */}
-            <div className="mt-4 bg-emerald-50/80 p-4 rounded-2xl border-2 border-emerald-200">
+            <div className="bg-emerald-50/80 p-4 rounded-2xl border-2 border-emerald-200">
               <span className="text-xs font-black text-emerald-800 uppercase tracking-wide block mb-2">
                 🎤 Lời bài hát (Sing-Along Lyrics):
               </span>
-              <div className="space-y-1.5 text-center">
+              <div className="space-y-2 text-center py-2">
                 {lesson.lyrics.map((line, idx) => (
                   <p
                     key={idx}
-                    className="text-base sm:text-lg font-black text-zinc-800 hover:text-pink-600 transition"
+                    className="text-base sm:text-xl font-black text-zinc-800 hover:text-pink-600 transition"
                   >
                     "{line}"
                   </p>
@@ -658,6 +727,19 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 Nhịp điệu: {currentBpm} BPM
               </span>
             </div>
+
+            {/* Sync Notice depending on practice mode */}
+            {practiceMode === 'video_beat' ? (
+              <div className="bg-pink-50 p-2.5 rounded-xl border border-pink-200 text-xs font-bold text-pink-800 flex items-center gap-2">
+                <Video className="w-4 h-4 text-pink-600 shrink-0" />
+                <span>🎬 Video bài hát sẽ tự động phát đồng bộ ngay khi em bấm micro thu âm bên dưới!</span>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
+                <Music className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>🎵 Lắng nghe tiếng đệm trống và đàn piano theo nhịp 1 - 2 - 3 - 4 để luyện hát nhé!</span>
+              </div>
+            )}
 
             {/* Beat Listening Bar (Instrumental Backing Track) */}
             <div className="bg-gradient-to-r from-orange-100 via-pink-100 to-yellow-100 p-4 rounded-2xl border-2 border-pink-200 flex flex-col items-center gap-3">
@@ -1110,38 +1192,38 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
         </div>
       )}
 
-      {/* POPUP FEEDBACK MODAL: Features the Robot AI Buddy character & English evaluation with Ting-Ting / Tick-Tick */}
+      {/* POPUP FEEDBACK MODAL: Compact, Responsive on Desktop/Tablet/Mobile with English Praise */}
       {showFeedbackModal && feedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border-6 border-pink-400 p-6 sm:p-8 max-w-lg w-full text-center shadow-2xl relative space-y-5 animate-scale-up">
-            {/* Robot Mascot in the modal */}
-            <div className="-mt-16 flex justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border-4 border-pink-400 p-5 sm:p-6 max-w-sm sm:max-w-md w-full text-center shadow-2xl relative space-y-3.5 max-h-[92vh] overflow-y-auto animate-scale-up">
+            {/* Mascot in header */}
+            <div className="-mt-14 flex justify-center drop-shadow-lg">
               <RoboBuddyMascot
-                size="lg"
+                size="md"
                 mood={feedback.status === 'OUTSTANDING' ? 'cheering' : 'happy'}
                 isDancing={true}
               />
             </div>
 
-            {/* Status Rating Banner: OUTSTANDING or KEEP_TRYING */}
+            {/* Status Rating Banner: Excellent! 🌟 or Keep trying! 🎈 (English only) */}
             <div
-              className={`p-3.5 rounded-2xl border-3 text-center ${
+              className={`p-3 rounded-2xl border-2 text-center shadow-md ${
                 feedback.status === 'OUTSTANDING'
-                  ? 'bg-emerald-100 border-emerald-400 text-emerald-900'
-                  : 'bg-amber-100 border-amber-400 text-amber-900'
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-emerald-300'
+                  : 'bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 border-amber-300'
               }`}
             >
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-tight">
-                {feedback.headline}
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight flex items-center justify-center gap-1.5">
+                <span>{feedback.headline || (feedback.status === 'OUTSTANDING' ? 'Excellent! 🌟' : 'Keep trying! 🎈')}</span>
               </h2>
             </div>
 
             {/* Star Rating Display */}
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1.5 py-0.5">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
-                  className={`w-9 h-9 ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 ${
                     i < feedback.stars
                       ? 'fill-amber-400 text-amber-400 drop-shadow-md scale-110'
                       : 'fill-zinc-200 text-zinc-300'
@@ -1151,46 +1233,59 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             </div>
 
             {/* Badge Award */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-black text-sm px-4 py-2 rounded-full shadow-md">
-              <Award className="w-5 h-5 text-yellow-300" />
-              <span>Huy hiệu: {feedback.badgeEarned}</span>
+            <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-md">
+              <Award className="w-4 h-4 text-yellow-300" />
+              <span>Award: {feedback.badgeEarned}</span>
             </div>
 
-            {/* Package 1: Skill Radar Chart from d3-visualization */}
-            {feedback.skills && <SkillRadarChart skills={feedback.skills} />}
-
-            {/* Robot Message in English */}
-            <div className="bg-pink-50 p-4 rounded-2xl border-2 border-pink-200 leading-relaxed text-left space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase text-pink-700">
-                  🤖 RoboBuddy AI Feedback:
-                </span>
-              </div>
-              <p className="text-base font-bold text-zinc-800">
+            {/* Short English Praise Message */}
+            <div className="bg-pink-50 p-3.5 rounded-2xl border-2 border-pink-200 text-center shadow-inner">
+              <span className="text-[10px] font-black uppercase text-pink-600 block mb-1">
+                🤖 RoboBuddy English Feedback:
+              </span>
+              <p className="text-sm sm:text-base font-black text-pink-950 leading-snug">
                 "{feedback.robotMessage}"
               </p>
             </div>
 
-            {/* Fun Tips in Child-friendly English */}
-            <div className="bg-yellow-50 p-3.5 rounded-2xl border-2 border-yellow-300 text-left space-y-1.5">
-              <span className="text-xs font-black text-amber-900 uppercase block">
-                💡 Lời khuyên âm nhạc cho học sinh lớp 5 (Music Tips):
-              </span>
-              {feedback.funTips.map((tip, i) => (
-                <p key={i} className="text-xs sm:text-sm font-bold text-zinc-800 flex items-start gap-2">
-                  <span className="text-pink-500 font-black">★</span>
-                  <span>{tip}</span>
+            {/* Single Short Fun Tip (if available) */}
+            {feedback.funTips && feedback.funTips.length > 0 && (
+              <div className="bg-yellow-50 px-3 py-2 rounded-xl border border-yellow-300 text-center">
+                <p className="text-xs font-bold text-amber-900">
+                  💡 {feedback.funTips[0]}
                 </p>
-              ))}
-            </div>
+              </div>
+            )}
 
-            {/* Modal Action */}
-            <div className="pt-2">
+            {/* Compact 4-Skill Badges */}
+            {feedback.skills && (
+              <div className="grid grid-cols-4 gap-1.5 text-center pt-1">
+                <div className="bg-pink-50 p-1.5 rounded-xl border border-pink-200">
+                  <span className="text-[10px] font-bold text-pink-600 block">Rhythm</span>
+                  <span className="text-xs font-black text-pink-900">{feedback.skills.rhythm}%</span>
+                </div>
+                <div className="bg-purple-50 p-1.5 rounded-xl border border-purple-200">
+                  <span className="text-[10px] font-bold text-purple-600 block">Melody</span>
+                  <span className="text-xs font-black text-purple-900">{feedback.skills.melody}%</span>
+                </div>
+                <div className="bg-amber-50 p-1.5 rounded-xl border border-amber-200">
+                  <span className="text-[10px] font-bold text-amber-600 block">Pitch</span>
+                  <span className="text-xs font-black text-amber-900">{feedback.skills.pronunciation}%</span>
+                </div>
+                <div className="bg-emerald-50 p-1.5 rounded-xl border border-emerald-200">
+                  <span className="text-[10px] font-bold text-emerald-600 block">Energy</span>
+                  <span className="text-xs font-black text-emerald-900">{feedback.skills.energy}%</span>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Action Button */}
+            <div className="pt-1">
               <button
                 onClick={() => setShowFeedbackModal(false)}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black text-base shadow-lg shadow-green-300 cursor-pointer transition"
+                className="w-full py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black text-sm sm:text-base shadow-lg shadow-green-300 cursor-pointer transition transform active:scale-95"
               >
-                Tiếp tục luyện tập! 🎉 (Continue Practice)
+                Continue Practice! 🎉 (Tiếp tục luyện tập)
               </button>
             </div>
           </div>
