@@ -47,13 +47,63 @@ interface StudentMissionViewProps {
   isStudentMode?: boolean;
 }
 
-// Helper to extract YouTube embed URL if input is a YouTube video link
-function getYoutubeEmbedUrl(url: string): string | null {
-  if (!url) return null;
-  const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+// Helper to extract YouTube, Google Drive, or streaming embed URL
+export function parseVideoSource(url: string | null | undefined): {
+  isIframe: boolean;
+  iframeUrl?: string;
+  videoSrc?: string;
+  isLocalBlob: boolean;
+  provider?: 'youtube' | 'drive' | 'dropbox' | 'direct';
+} {
+  if (!url || typeof url !== 'string') {
+    return { isIframe: false, isLocalBlob: false };
+  }
+  const trimmed = url.trim();
+
+  // Local Blob URL created on a specific browser session
+  if (trimmed.startsWith('blob:')) {
+    return { isIframe: false, videoSrc: trimmed, isLocalBlob: true, provider: 'direct' };
+  }
+
+  // 1. YouTube Match (watch, youtu.be, embed, shorts)
+  const ytMatch = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
   );
-  return match ? `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=0&rel=0` : null;
+  if (ytMatch) {
+    return {
+      isIframe: true,
+      iframeUrl: `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=0&rel=0&playsinline=1&enablejsapi=1`,
+      isLocalBlob: false,
+      provider: 'youtube',
+    };
+  }
+
+  // 2. Google Drive Match (view, open, uc)
+  const gDriveMatch = trimmed.match(
+    /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/
+  );
+  if (gDriveMatch) {
+    return {
+      isIframe: true,
+      iframeUrl: `https://drive.google.com/file/d/${gDriveMatch[1]}/preview`,
+      isLocalBlob: false,
+      provider: 'drive',
+    };
+  }
+
+  // 3. Dropbox Direct Stream
+  if (trimmed.includes('dropbox.com')) {
+    const directDropbox = trimmed.replace('dl=0', 'raw=1');
+    return { isIframe: false, videoSrc: directDropbox, isLocalBlob: false, provider: 'dropbox' };
+  }
+
+  // 4. Direct Online Video (.mp4, .webm, cdn, etc.)
+  return { isIframe: false, videoSrc: trimmed, isLocalBlob: false, provider: 'direct' };
+}
+
+function getYoutubeEmbedUrl(url: string): string | null {
+  const info = parseVideoSource(url);
+  return info.isIframe ? info.iframeUrl || null : null;
 }
 
 export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
@@ -71,6 +121,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [showVideoInputModal, setShowVideoInputModal] = useState(false);
   const [customVideoInputUrl, setCustomVideoInputUrl] = useState('');
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [karaokeVideoError, setKaraokeVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Step 2: Beat State
@@ -142,6 +194,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setActiveKaraokeUrl(defaultVideo);
     setCustomKaraokeInputUrl('');
     setKaraokeUploadFileName(null);
+    setVideoError(false);
+    setKaraokeVideoError(false);
 
     kidsBeatEngine.setBpm(lesson.bpm || 90);
     kidsBeatEngine.setCustomBeatAudio(lesson.beatAudioUrl || null);
@@ -707,7 +761,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <>
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-emerald-300 shadow-inner group flex items-center justify-center">
                   {youtubeEmbedUrl ? (
-                    // YouTube Iframe Embed Player
+                    // YouTube / Google Drive Iframe Embed Player (Plays on 100% of PC, Phones & Tablets)
                     <iframe
                       src={youtubeEmbedUrl}
                       title={lesson.title}
@@ -715,18 +769,36 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
-                  ) : activeVideoUrl ? (
-                    // HTML5 Video Player with controls
+                  ) : activeVideoUrl && (!activeVideoUrl.startsWith('blob:') || !isStudentMode) && !videoError ? (
+                    // HTML5 Video Player with iOS / Android mobile optimization
                     <video
                       ref={videoRef}
                       src={activeVideoUrl}
                       controls
                       loop
                       playsInline
+                      preload="metadata"
                       onPlay={() => setIsVideoPlaying(true)}
                       onPause={() => setIsVideoPlaying(false)}
+                      onError={() => setVideoError(true)}
                       className="w-full h-full object-contain bg-black"
                     />
+                  ) : activeVideoUrl && ((activeVideoUrl.startsWith('blob:') && isStudentMode) || videoError) ? (
+                    // Friendly mobile fallback card when teacher uploaded a local file
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500 via-rose-500 to-pink-600 p-4 sm:p-6 text-center text-white space-y-2">
+                      <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shadow-inner">
+                        📱
+                      </div>
+                      <h4 className="text-sm sm:text-base font-black tracking-wide">
+                        Video mẫu từ tệp máy tính cá nhân
+                      </h4>
+                      <p className="text-xs text-white/95 max-w-sm leading-relaxed">
+                        Tệp video này được tải từ máy tính của thầy/cô nên điện thoại hoặc tablet chưa thể tải trực tiếp qua mạng.
+                      </p>
+                      <div className="bg-black/30 backdrop-blur-xs px-3 py-2 rounded-xl text-[11px] font-bold text-yellow-200 border border-white/20 max-w-sm">
+                        💡 Em hãy nhìn vào phần <b>Nội Dung Thực Hành</b> ở dưới, bấm Micro để tập hát và nộp bài nhé! Thầy/Cô dán <b>Link YouTube</b> hoặc <b>Google Drive</b> để video phát mượt mà trên mọi thiết bị.
+                      </div>
+                    </div>
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-400 via-yellow-300 to-green-400 p-6 text-center">
                       <Music className="w-16 h-16 text-white drop-shadow animate-bounce mb-2" />
@@ -839,14 +911,31 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
-                      ) : (
+                      ) : (!effectiveKaraokeUrl.startsWith('blob:') || !isStudentMode) && !karaokeVideoError ? (
                         <video
                           src={effectiveKaraokeUrl}
                           controls
                           loop
                           playsInline
+                          preload="metadata"
+                          onError={() => setKaraokeVideoError(true)}
                           className="w-full h-full object-contain bg-black"
                         />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-600 via-pink-600 to-rose-500 p-4 sm:p-6 text-center text-white space-y-2">
+                          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shadow-inner">
+                            🎬
+                          </div>
+                          <h4 className="text-sm sm:text-base font-black tracking-wide">
+                            Video Karaoke từ tệp máy tính cá nhân
+                          </h4>
+                          <p className="text-xs text-white/95 max-w-sm leading-relaxed">
+                            Tệp video karaoke này được chọn từ máy tính của thầy/cô nên điện thoại hoặc tablet chưa tải được qua mạng.
+                          </p>
+                          <div className="bg-black/30 backdrop-blur-xs px-3 py-2 rounded-xl text-[11px] font-bold text-yellow-200 border border-white/20 max-w-sm">
+                            💡 Thầy/Cô chỉ cần dán <b>Link YouTube Karaoke</b> hoặc <b>Google Drive</b> để học sinh xem được trên 100% điện thoại và máy tính bảng!
+                          </div>
+                        </div>
                       )}
                     </div>
                   ) : (
