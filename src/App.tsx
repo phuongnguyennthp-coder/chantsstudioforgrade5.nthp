@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Music, Star, Award, Heart, RefreshCw, Key, Share2, ExternalLink } from 'lucide-react';
+import {
+  Sparkles,
+  Music,
+  Star,
+  Award,
+  Heart,
+  RefreshCw,
+  Key,
+  Share2,
+  ExternalLink,
+  Lock,
+  Eye,
+} from 'lucide-react';
 import { SongLesson } from './types/kidsMusic';
 import { INITIAL_LESSONS } from './data/kidLessons';
 import { StudentMissionView } from './components/StudentMissionView';
@@ -33,6 +45,22 @@ export default function App() {
     return params.get('embed') === 'true' || params.get('view') === 'student';
   });
 
+  // Student vs Teacher Mode
+  // If opened with embed=true or view=student, it is strictly student mode
+  const [isStudentMode, setIsStudentMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('embed') === 'true' || params.get('view') === 'student') {
+      return true;
+    }
+    const saved = localStorage.getItem('chantsstudio_mode');
+    return saved ? saved === 'student' : true;
+  });
+
+  // Teacher PIN verification modal
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+
   // Decode lessonData from URL parameter if opened from Heyzine / shared link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -40,7 +68,10 @@ export default function App() {
     if (lessonDataRaw) {
       try {
         const decoded = decodeURIComponent(atob(lessonDataRaw));
-        const sharedLesson: SongLesson = JSON.parse(decoded);
+        const sharedLesson: SongLesson & { teacherApiKey?: string } = JSON.parse(decoded);
+        if (sharedLesson.teacherApiKey && !localStorage.getItem('gemini_api_key')) {
+          localStorage.setItem('gemini_api_key', sharedLesson.teacherApiKey);
+        }
         setLessons((prev) => {
           const exists = prev.some((l) => l.id === sharedLesson.id);
           return exists ? prev : [sharedLesson, ...prev];
@@ -108,23 +139,42 @@ export default function App() {
 
           {/* Header Actions */}
           <div className="flex items-center gap-2">
-            {isEmbedMode ? (
+            {isStudentMode ? (
               <div className="flex items-center gap-2">
-                <span className="bg-pink-100 text-pink-700 text-xs font-black px-3 py-1.5 rounded-full border border-pink-200">
-                  📖 Heyzine Interactive Flipbook
-                </span>
-                <a
-                  href={window.location.href.replace('&embed=true', '').replace('embed=true', '')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200 shadow-sm"
-                  title="Mở toàn màn hình"
+                {isEmbedMode ? (
+                  <span className="bg-pink-100 text-pink-700 text-xs font-black px-3 py-1.5 rounded-full border border-pink-200">
+                    📖 Heyzine Flipbook
+                  </span>
+                ) : (
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1 shadow-sm">
+                    🎓 Giao diện Học sinh
+                  </span>
+                )}
+                {/* Discrete Teacher switch with PIN lock */}
+                <button
+                  onClick={() => setIsPinModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
+                  title="Dành cho Giáo viên mở Teacher Studio"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                </a>
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="hidden sm:inline">Giáo viên</span>
+                </button>
               </div>
             ) : (
               <>
+                {/* Switch back to Student View */}
+                <button
+                  onClick={() => {
+                    setIsStudentMode(true);
+                    localStorage.setItem('chantsstudio_mode', 'student');
+                  }}
+                  className="px-3 py-2 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-black transition cursor-pointer flex items-center gap-1 border border-zinc-200 shadow-sm"
+                  title="Chuyển sang xem giao diện của học sinh"
+                >
+                  <Eye className="w-3.5 h-3.5 text-zinc-500" />
+                  <span className="hidden sm:inline">Xem như Học sinh</span>
+                </button>
+
                 {/* Share Link for Heyzine Button */}
                 <button
                   onClick={() => setIsShareModalOpen(true)}
@@ -136,7 +186,7 @@ export default function App() {
                   <span className="sm:hidden">Giao bài</span>
                 </button>
 
-                {/* API Key Settings Button with red notice */}
+                {/* API Key Settings Button */}
                 <button
                   onClick={() => setIsApiKeyModalOpen(true)}
                   className="flex flex-col items-end px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 transition cursor-pointer text-right shadow-sm"
@@ -146,8 +196,8 @@ export default function App() {
                     <Key className="w-3.5 h-3.5 text-rose-600" />
                     <span>Settings (API Key)</span>
                   </div>
-                  <span className="text-[10px] font-bold text-rose-600 animate-pulse">
-                    Lấy API key để sử dụng app
+                  <span className="text-[10px] font-bold text-rose-600">
+                    Cấu hình AI
                   </span>
                 </button>
 
@@ -172,8 +222,81 @@ export default function App() {
           onSelectLesson={(l) => setActiveLesson(l)}
           onOpenTeacherStudio={() => setIsTeacherModalOpen(true)}
           onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+          isStudentMode={isStudentMode}
         />
       </main>
+
+      {/* Teacher PIN Access Modal */}
+      {isPinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl border-4 border-amber-400 p-6 sm:p-7 max-w-sm w-full text-center shadow-2xl relative space-y-4 animate-scale-up">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-3xl shadow-inner">
+              🍎
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-amber-950">
+                Khu Vực Giáo Viên
+              </h3>
+              <p className="text-xs font-bold text-zinc-500 mt-1">
+                Nhập mã PIN để mở Teacher Studio & Cài đặt hệ thống (Mặc định: 1234):
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (pinInput.trim() === '1234') {
+                  setIsStudentMode(false);
+                  localStorage.setItem('chantsstudio_mode', 'teacher');
+                  setIsPinModalOpen(false);
+                  setPinInput('');
+                  setPinError('');
+                } else {
+                  setPinError('Mã PIN chưa đúng! (Mặc định: 1234)');
+                }
+              }}
+              className="space-y-3"
+            >
+              <input
+                type="password"
+                maxLength={8}
+                value={pinInput}
+                onChange={(e) => {
+                  setPinInput(e.target.value);
+                  setPinError('');
+                }}
+                placeholder="Nhập mã PIN (1234)"
+                autoFocus
+                className="w-full text-center tracking-widest text-xl font-black py-2.5 px-4 rounded-xl border-2 border-amber-300 focus:border-amber-500 outline-none"
+              />
+              {pinError && (
+                <p className="text-xs font-black text-rose-600 animate-shake">
+                  {pinError}
+                </p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsPinModalOpen(false);
+                    setPinInput('');
+                    setPinError('');
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold cursor-pointer transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs font-black shadow-md cursor-pointer transition"
+                >
+                  Xác nhận
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Teacher Modal */}
       <TeacherStudioModal
