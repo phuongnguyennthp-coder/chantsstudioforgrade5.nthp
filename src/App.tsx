@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Music, Star, Award, Heart, RefreshCw, Key } from 'lucide-react';
+import { Sparkles, Music, Star, Award, Heart, RefreshCw, Key, Share2, ExternalLink } from 'lucide-react';
 import { SongLesson } from './types/kidsMusic';
 import { INITIAL_LESSONS } from './data/kidLessons';
 import { StudentMissionView } from './components/StudentMissionView';
 import { TeacherStudioModal } from './components/TeacherStudioModal';
 import { ApiKeySettingsModal } from './components/ApiKeySettingsModal';
+import { ShareLessonModal } from './components/ShareLessonModal';
 
 export default function App() {
   const [lessons, setLessons] = useState<SongLesson[]>(() => {
@@ -24,6 +25,38 @@ export default function App() {
   const [activeLesson, setActiveLesson] = useState<SongLesson>(lessons[0]);
   const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // Check if loaded inside Heyzine iframe or student view mode
+  const [isEmbedMode, setIsEmbedMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('embed') === 'true' || params.get('view') === 'student';
+  });
+
+  // Decode lessonData from URL parameter if opened from Heyzine / shared link
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const lessonDataRaw = params.get('lessonData');
+    if (lessonDataRaw) {
+      try {
+        const decoded = decodeURIComponent(atob(lessonDataRaw));
+        const sharedLesson: SongLesson = JSON.parse(decoded);
+        setLessons((prev) => {
+          const exists = prev.some((l) => l.id === sharedLesson.id);
+          return exists ? prev : [sharedLesson, ...prev];
+        });
+        setActiveLesson(sharedLesson);
+      } catch (e) {
+        console.warn('Failed to parse shared lesson data from URL', e);
+      }
+    } else {
+      const lessonId = params.get('lessonId');
+      if (lessonId) {
+        const found = lessons.find((l) => l.id === lessonId);
+        if (found) setActiveLesson(found);
+      }
+    }
+  }, []);
 
   // Save lessons to localStorage under chantsstudioforgrade5_lessons
   useEffect(() => {
@@ -73,30 +106,60 @@ export default function App() {
             </div>
           </div>
 
-          {/* Quick Header Actions: API Key Settings & Teacher Studio */}
-          <div className="flex items-center gap-2.5">
-            {/* API Key Settings Button with red notice */}
-            <button
-              onClick={() => setIsApiKeyModalOpen(true)}
-              className="flex flex-col items-end px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 transition cursor-pointer text-right shadow-sm"
-              title="Cài đặt API key và chọn model AI"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-black text-rose-700">
-                <Key className="w-3.5 h-3.5 text-rose-600" />
-                <span>Settings (API Key)</span>
+          {/* Header Actions */}
+          <div className="flex items-center gap-2">
+            {isEmbedMode ? (
+              <div className="flex items-center gap-2">
+                <span className="bg-pink-100 text-pink-700 text-xs font-black px-3 py-1.5 rounded-full border border-pink-200">
+                  📖 Heyzine Interactive Flipbook
+                </span>
+                <a
+                  href={window.location.href.replace('&embed=true', '').replace('embed=true', '')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-600 border border-zinc-200 shadow-sm"
+                  title="Mở toàn màn hình"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
               </div>
-              <span className="text-[10px] font-bold text-rose-600 animate-pulse">
-                Lấy API key để sử dụng app
-              </span>
-            </button>
+            ) : (
+              <>
+                {/* Share Link for Heyzine Button */}
+                <button
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="px-3 py-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-800 text-xs font-black transition cursor-pointer flex items-center gap-1.5 border border-pink-300 shadow-sm"
+                  title="Xuất link bài hát hiện tại để nhúng vào Heyzine hoặc gửi cho học sinh"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-pink-600" />
+                  <span className="hidden sm:inline">Xuất Link Heyzine</span>
+                  <span className="sm:hidden">Giao bài</span>
+                </button>
 
-            {/* Teacher Studio Trigger */}
-            <button
-              onClick={() => setIsTeacherModalOpen(true)}
-              className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-black shadow-md shadow-amber-200 transition cursor-pointer flex items-center gap-1.5"
-            >
-              <span>🍎 Teacher Studio</span>
-            </button>
+                {/* API Key Settings Button with red notice */}
+                <button
+                  onClick={() => setIsApiKeyModalOpen(true)}
+                  className="flex flex-col items-end px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 transition cursor-pointer text-right shadow-sm"
+                  title="Cài đặt API key và chọn model AI"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-black text-rose-700">
+                    <Key className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Settings (API Key)</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-rose-600 animate-pulse">
+                    Lấy API key để sử dụng app
+                  </span>
+                </button>
+
+                {/* Teacher Studio Trigger */}
+                <button
+                  onClick={() => setIsTeacherModalOpen(true)}
+                  className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-black shadow-md shadow-amber-200 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>🍎 Teacher Studio</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -127,6 +190,13 @@ export default function App() {
         isOpen={isApiKeyModalOpen}
         onClose={() => setIsApiKeyModalOpen(false)}
         isMandatory={!localStorage.getItem('gemini_api_key')}
+      />
+
+      {/* Heyzine Share Lesson Modal */}
+      <ShareLessonModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        lesson={activeLesson}
       />
     </div>
   );
