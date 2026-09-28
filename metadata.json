@@ -1,0 +1,11 @@
+{
+  "name": "chantsstudioforgrade5",
+  "description": "chantsstudioforgrade5: Fun, colorful English chants & music learning app for Grade 5 elementary students. Watch song videos, practice singing along with the beat, record voice, and get sweet feedback from RoboBuddy AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

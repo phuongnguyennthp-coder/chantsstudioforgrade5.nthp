@@ -1,0 +1,87 @@
+import { SongLesson } from '../types/kidsMusic';
+
+export const INITIAL_LESSONS: SongLesson[] = [
+  {
+    id: 'lesson-count-on-me',
+    title: 'Count On Me',
+    gradeLevel: 'Grade 5',
+    category: 'Friendship & Rhythm Sync',
+    bpm: 86,
+    videoType: 'animated',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    lyrics: [
+      'If you ever find yourself stuck in the middle of the sea,',
+      "I'll sail the world to find you.",
+      'If you ever find yourself lost in the dark and you can’t see,',
+      "I'll be the light to guide you.",
+      'You can count on me like one, two, three,',
+      "I'll be there!",
+    ],
+    missionTask:
+      'Listen to the acoustic guitar beat, tap your foot to the rhythm (1, 2, 3), and sing with clear English pronunciation and a warm smile!',
+    thumbnailColor: 'from-pink-500 to-yellow-400',
+    createdAt: 'Grade 5 English Music Curriculum',
+  },
+  {
+    id: 'lesson-proud-of-you',
+    title: 'Proud of You',
+    gradeLevel: 'Grade 5',
+    category: 'Vocal Melody & Pitch Control',
+    bpm: 92,
+    videoType: 'animated',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+    lyrics: [
+      'Love in your eyes, sitting silent by my side,',
+      'Going on a day so much to do.',
+      'Can you hear my heart beating for you?',
+      'I can fly, I’m proud that I can fly so high,',
+      'To be with you, among the stars and sky.',
+    ],
+    missionTask:
+      'Watch the video to catch the high notes, then practice singing smoothly with the piano beat. Keep your head upright!',
+    thumbnailColor: 'from-emerald-400 to-green-600',
+    createdAt: 'Grade 5 English Music Curriculum',
+  },
+  {
+    id: 'lesson-million-dreams',
+    title: 'A Million Dreams',
+    gradeLevel: 'Grade 5',
+    category: 'Musical Choir & Dynamic Expression',
+    bpm: 90,
+    videoType: 'animated',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    lyrics: [
+      'I close my eyes and I can see,',
+      'The world that’s waiting up for me,',
+      'That I call my own.',
+      'Through the dark, through the door,',
+      'Through where no one’s been before,',
+      'A million dreams for the world we’re gonna make!',
+    ],
+    missionTask:
+      'Take a deep breath before the chorus! Sing with energy and passion along with the drum and orchestra beat.',
+    thumbnailColor: 'from-rose-500 to-orange-400',
+    createdAt: 'Grade 5 English Music Curriculum',
+  },
+  {
+    id: 'lesson-twinkle-g5',
+    title: 'Twinkle Star (Advanced Phrasing)',
+    gradeLevel: 'Grade 5',
+    category: 'Acoustic Harmony & Phrasing',
+    bpm: 84,
+    videoType: 'animated',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    lyrics: [
+      'Twinkle, twinkle, little star,',
+      'How I wonder what you are!',
+      'Up above the world so high,',
+      'Like a diamond in the sky.',
+      'Twinkle, twinkle, little star,',
+      'How I wonder what you are!',
+    ],
+    missionTask:
+      'Focus on steady rhythm and pitch accuracy. Try not to rush on the beat!',
+    thumbnailColor: 'from-amber-400 to-pink-500',
+    createdAt: 'Grade 5 English Music Curriculum',
+  },
+];
