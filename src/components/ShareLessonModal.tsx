@@ -9,6 +9,7 @@ import {
   Share2,
   Code,
   Music,
+  AlertTriangle,
 } from 'lucide-react';
 import { SongLesson } from '../types/kidsMusic';
 
@@ -126,10 +127,23 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               </span>
             </div>
           </div>
-          <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
-            Sẵn sàng giao
-          </span>
-        </div>
+        {/* Warning if video is a local blob from teacher PC */}
+        {(Boolean(lesson.videoUrl?.startsWith('blob:')) || Boolean(lesson.karaokeVideoUrl?.startsWith('blob:'))) && (
+          <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-400 text-amber-950 space-y-2 animate-fade-in">
+            <div className="flex items-center gap-2 font-black text-xs text-amber-800">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+              <span>LƯU Ý: Video bài hát đang là tệp từ máy tính cá nhân (.mp4)!</span>
+            </div>
+            <p className="text-xs leading-relaxed text-amber-900">
+              Vì tệp video này nằm trong ổ cứng máy tính của thầy/cô, nên khi học sinh mở link trên <b>Điện thoại hoặc Máy tính bảng (iPad)</b> sẽ không thể tải được video qua mạng.
+            </p>
+            <div className="bg-white/90 p-2.5 rounded-xl text-xs font-bold text-emerald-800 border border-amber-200">
+              👉 <b>Cách khắc phục để xem được 100% trên Điện thoại & Tablet:</b>
+              <br />
+              Thầy/Cô hãy bấm <b>Chỉnh sửa bài học</b> ➔ dán <b>Link YouTube</b> hoặc <b>Link Google Drive</b> vào mục Video. Học sinh dùng bất kỳ thiết bị nào cũng xem mượt mà!
+            </div>
+          </div>
+        )}
 
         {/* Section 1: Copy Direct Link */}
         <div className="space-y-2">
