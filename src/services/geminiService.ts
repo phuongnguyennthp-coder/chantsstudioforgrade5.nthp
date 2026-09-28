@@ -28,18 +28,22 @@ export const FALLBACK_MODEL_CHAIN = [
 ];
 
 const ROBOBUDDY_SYSTEM_INSTRUCTION = `
-You are RoboBuddy, a super cheerful, friendly, and colorful musical robot AI assistant for elementary school kids (ages 6 to 11).
-Your mission is to inspire kids to love singing, chants, music, and learning rhythm!
+You are RoboBuddy, a super cheerful, cute musical robot companion for Grade 5 elementary school kids.
 Guidelines:
-1. ALL OUTPUT MUST BE ENTIRELY IN ENGLISH.
-2. Language style: Very warm, fun, enthusiastic, easy to understand for young children, with lots of happy emojis (🌟, 🎶, 🤖, 🌈, 🎈, 💖).
+1. ALL OUTPUT, PRAISE, AND HEADLINES MUST BE 100% IN ENGLISH. NO OTHER LANGUAGE.
+2. Ultra-concise & enthusiastic: Keep praise very short, punchy, sweet, and fun with cheerful emojis (🌟, 🎶, 🤖, 💖)!
 3. Feedback evaluation rule:
-   - When the student did very well (score >= 75%): Give them an "OUTSTANDING!" rating with immense praise and high energy!
-   - When the student needs more practice (score < 75%): Give them a "GREAT EFFORT! KEEP PRACTICING WITH ME!" rating, warm encouragement (growth mindset), and 1-2 easy, playful tips. Never be harsh or discouraging.
-4. Output Format: Always respond with clean valid JSON only without markdown formatting:
+   - If score >= 70%:
+     - headline MUST BE: "Excellent! 🌟"
+     - robotMessage: Exactly ONE short English praise sentence (< 12 words). Example: "Super singing! Your rhythm is bright and wonderful! 💖"
+   - If score < 70%:
+     - headline MUST BE: "Keep trying! 🎈"
+     - robotMessage: Exactly ONE short English encouragement sentence (< 12 words). Example: "Great singing try! Sing along louder with the beat! 🌟"
+4. funTips: At most 1 very short English tip (< 10 words), or empty array [].
+5. Output Format: Always respond with clean valid JSON only without markdown formatting:
 {
   "status": "OUTSTANDING" | "KEEP_TRYING",
-  "headline": string,
+  "headline": "Excellent! 🌟" | "Keep trying! 🎈",
   "badgeEarned": string,
   "stars": number (3, 4, or 5),
   "robotMessage": string,
@@ -170,13 +174,19 @@ Return a joyful JSON evaluation object from RoboBuddy.
 
       const feedback: RoboBuddyFeedback = {
         status: parsed.status === 'KEEP_TRYING' ? 'KEEP_TRYING' : 'OUTSTANDING',
-        headline: parsed.headline || `🌟 OUTSTANDING SINGING, ${params.studentName.toUpperCase()}! 🌟`,
-        badgeEarned: parsed.badgeEarned || 'Golden Melody Superstar 🏆',
-        stars: parsed.stars || (isOutstanding ? 5 : 4),
-        robotMessage: parsed.robotMessage || 'Beep boop! Great singing with the beat!',
+        headline:
+          parsed.headline ||
+          (isOutstanding ? 'Excellent! 🌟' : 'Keep trying! 🎈'),
+        badgeEarned: parsed.badgeEarned || (isOutstanding ? 'Rhythm Star 🌟' : 'Music Explorer 🎈'),
+        stars: parsed.stars || (isOutstanding ? 5 : 3),
+        robotMessage:
+          parsed.robotMessage ||
+          (isOutstanding
+            ? 'Super singing! Your rhythm is wonderful! 💖'
+            : 'Great try! Sing along louder with the beat! 🌟'),
         funTips: Array.isArray(parsed.funTips) && parsed.funTips.length > 0
           ? parsed.funTips
-          : ['Keep singing with that happy smile! 💖', 'Lock into the beat on 1 and 3! 🥁'],
+          : (isOutstanding ? [] : ['Follow the drum beat on 1 and 3! 🥁']),
         cheerSound: parsed.cheerSound || (isOutstanding ? 'hooray' : 'sparkle'),
         score: overallScore,
         skills: parsed.skills || {
