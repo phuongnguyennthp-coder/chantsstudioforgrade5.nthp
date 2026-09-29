@@ -807,113 +807,99 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             )}
           </div>
 
-          {/* 3. Sing-Along Lyrics OR Karaoke Video Selection */}
-          <div className="bg-gradient-to-r from-pink-50 via-purple-50 to-blue-50 p-4 sm:p-5 rounded-2xl border-2 border-pink-300 space-y-3">
+          {/* 3. Chant Lyrics Section (Step 2 Beat Challenge) */}
+          <div className="bg-amber-50/70 p-4 sm:p-5 rounded-2xl border-2 border-amber-300 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-pink-600" />
-                <span>3. Student Chant Lyrics (Text vs Karaoke Video):</span>
+              <span className="text-xs font-black text-amber-950 uppercase flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-amber-600" />
+                <span>3. Chant Lyrics (for Step 2 Beat Challenge):</span>
+              </span>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+                📖 Displayed in Step 2
               </span>
             </div>
 
-            {/* Toggle Mode: Text Lyrics vs Karaoke Video */}
-            <div className="grid grid-cols-2 gap-2 bg-white/80 p-1.5 rounded-xl border border-pink-200">
-              <button
-                type="button"
-                onClick={() => setLyricsMode('text')}
-                className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  lyricsMode === 'text'
-                    ? 'bg-pink-500 text-white shadow-sm'
-                    : 'text-zinc-600 hover:bg-pink-50'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>📝 Option 1: Text Lyrics</span>
-              </button>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-zinc-700 block">
+                Type or paste chant lyrics (one line per row):
+              </label>
+              <textarea
+                rows={4}
+                value={lyricsText}
+                onChange={(e) => setLyricsText(e.target.value)}
+                placeholder="What do you do on Sundays?&#10;I always play volleyball on Sundays.&#10;Sometimes, sometimes, sometimes.&#10;I sometimes ride my bike on Saturdays."
+                className="w-full text-xs font-bold text-zinc-800 bg-white p-3 rounded-xl border-2 border-amber-200 focus:border-amber-500 outline-none leading-relaxed"
+              />
+              <span className="text-[10px] text-zinc-500 block">
+                💡 These lines will be prominently shown at the top of Step 2 so students can easily read them while practicing with the drum beats.
+              </span>
+            </div>
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setLyricsMode('karaoke_video')}
-                className={`py-2 px-3 rounded-lg text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                  lyricsMode === 'karaoke_video'
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-zinc-600 hover:bg-purple-50'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5" />
-                <span>🎬 Option 2: Karaoke Video</span>
-              </button>
+          {/* 4. Karaoke Video Section (Optional for Step 1) */}
+          <div className="bg-purple-50/70 p-4 sm:p-5 rounded-2xl border-2 border-purple-300 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-black text-purple-950 uppercase flex items-center gap-1.5">
+                <Video className="w-4 h-4 text-purple-600" />
+                <span>4. Karaoke Chant Video (Optional - with On-screen Lyrics):</span>
+              </span>
+              <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-300">
+                🎤 Step 1 Karaoke Mode
+              </span>
             </div>
 
-            {lyricsMode === 'text' ? (
-              <div className="space-y-1.5 animate-fade-in">
-                <label className="text-xs font-bold text-zinc-700 block">
-                  Chant Lyrics (one line per row):
+            <p className="text-xs font-bold text-purple-900">
+              🎬 Add a video with animated karaoke lyrics so students can switch between the Chant Video and Karaoke Video:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Karaoke Video Upload */}
+              <div>
+                <label className="text-[11px] font-bold text-zinc-700 block mb-1">
+                  Upload Video from PC (MP4, WebM):
                 </label>
-                <textarea
-                  rows={4}
-                  value={lyricsText}
-                  onChange={(e) => setLyricsText(e.target.value)}
-                  placeholder="Row, row, row your boat&#10;Gently down the stream&#10;Merrily, merrily, merrily, merrily&#10;Life is but a dream"
-                  className="w-full text-xs font-bold text-zinc-800 bg-white p-3 rounded-xl border-2 border-pink-200 focus:border-pink-500 outline-none leading-relaxed"
-                />
+                <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-purple-300 rounded-xl bg-white hover:bg-purple-50 transition cursor-pointer text-center">
+                  <Upload className="w-5 h-5 text-purple-600 mb-1" />
+                  <span className="text-xs font-bold text-zinc-800">
+                    {karaokeVideoFileName || 'Select karaoke video file'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={handleKaraokeFileUpload}
+                    className="hidden"
+                  />
+                </label>
               </div>
-            ) : (
-              <div className="space-y-3 animate-fade-in bg-white p-3.5 rounded-xl border border-purple-200">
-                <p className="text-xs font-bold text-purple-900">
-                  🎬 Embed video with animated lyrics for students to watch and chant along:
-                </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Karaoke Video Upload */}
-                  <div>
-                    <label className="text-[11px] font-bold text-zinc-700 block mb-1">
-                      Upload Video (MP4, WebM):
-                    </label>
-                    <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
-                      <Upload className="w-5 h-5 text-purple-600 mb-1" />
-                      <span className="text-xs font-bold text-zinc-800">
-                        {karaokeVideoFileName || 'Select karaoke video file'}
-                      </span>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={handleKaraokeFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+              {/* Karaoke YouTube or Google Drive Link */}
+              <div>
+                <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between mb-1">
+                  <span>YouTube / Google Drive Link:</span>
+                  <span className="text-[10px] text-purple-600 font-extrabold">Recommended ⭐</span>
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=... or Drive URL"
+                  value={karaokeCustomUrl}
+                  onChange={(e) => {
+                    setKaraokeCustomUrl(e.target.value);
+                    setKaraokeVideoUrl(e.target.value);
+                  }}
+                  className="w-full text-xs font-bold text-zinc-800 bg-white p-2.5 rounded-xl border border-zinc-300 focus:border-purple-500 outline-none"
+                />
+                <span className="text-[10px] text-zinc-500 block mt-1">
+                  Supports YouTube, Shorts, Drive preview. 100% Mobile & Tablet Compatible!
+                </span>
+              </div>
+            </div>
 
-                  {/* Karaoke YouTube or Google Drive Link */}
-                  <div>
-                    <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between mb-1">
-                      <span>YouTube / Google Drive Link:</span>
-                      <span className="text-[10px] text-purple-600 font-extrabold">Recommended ⭐</span>
-                    </label>
-                    <input
-                      type="url"
-                      placeholder="YouTube or Google Drive URL"
-                      value={karaokeCustomUrl}
-                      onChange={(e) => {
-                        setKaraokeCustomUrl(e.target.value);
-                        setKaraokeVideoUrl(e.target.value);
-                      }}
-                      className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-2.5 rounded-xl border border-zinc-300 focus:border-purple-500 outline-none"
-                    />
-                    <span className="text-[10px] text-zinc-500 block mt-1">
-                      Supports YouTube, Shorts, Drive. 100% Mobile & Tablet Compatible!
-                    </span>
-                  </div>
-                </div>
-
-                {(karaokeVideoUrl || karaokeCustomUrl) && (
-                  <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="truncate">
-                      Selected Video: {karaokeVideoFileName || karaokeCustomUrl}
-                    </span>
-                  </div>
-                )}
+            {(karaokeVideoUrl || karaokeCustomUrl) && (
+              <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="truncate">
+                  Selected Karaoke Video: {karaokeVideoFileName || karaokeCustomUrl}
+                </span>
               </div>
             )}
           </div>
