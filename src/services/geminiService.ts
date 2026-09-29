@@ -4,26 +4,26 @@ export const AI_MODELS = [
   {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
-    badge: 'Mới nhất • Cực nhanh',
-    desc: 'Mô hình thế hệ mới của Google, tối ưu tốc độ phản hồi và chấm điểm thời gian thực.',
+    badge: 'Latest • Ultra Fast',
+    desc: 'Google next-gen model, optimized for fast feedback and real-time chant scoring.',
   },
   {
     id: 'gemini-1.5-flash',
     name: 'Gemini 1.5 Flash',
-    badge: 'Siêu ổn định',
-    desc: 'Mô hình chuẩn chính thức từ Google AI Studio, độ tin cậy và hạn mức cao.',
+    badge: 'Super Stable',
+    desc: 'Standard Google AI Studio model with high reliability and generous quotas.',
   },
   {
     id: 'gemini-2.0-flash-lite',
     name: 'Gemini 2.0 Flash Lite',
-    badge: 'Tiết kiệm hạn mức',
-    desc: 'Mô hình gọn nhẹ, phản hồi nhanh và tối ưu chi phí quota miễn phí.',
+    badge: 'Quota Efficient',
+    desc: 'Lightweight model with quick responses and minimal quota consumption.',
   },
   {
     id: 'gemini-3.8-flash',
     name: 'Gemini 3.8 Flash',
-    badge: 'Google đề xuất',
-    desc: 'Mô hình mới được khuyến nghị trực tiếp trong tài liệu Google Gemini.',
+    badge: 'Google Recommended',
+    desc: 'New model directly recommended in Google Gemini documentation.',
   },
 ];
 
@@ -164,7 +164,7 @@ export async function evaluateStudentChantWithFallback(
     return {
       success: true,
       data: offlineData,
-      modelUsed: 'RoboBuddy Smart Engine (Học sinh)',
+      modelUsed: 'RoboBuddy Smart Engine (Student)',
       attemptedModels: ['smart-offline-engine'],
       isOfflineFallback: true,
     };
@@ -267,7 +267,7 @@ Return a joyful JSON evaluation object from RoboBuddy.
           : (isOutstanding ? [] : ['Follow the drum beat on 1 and 3! 🥁']),
         cheerSound: parsed.cheerSound || (isOutstanding ? 'hooray' : 'sparkle'),
         score: overallScore,
-        skills: {
+        skills: parsed.skills || {
           rhythm: params.rhythmScore,
           pronunciation: pronunciationScore,
           melody: params.pitchScore,
@@ -282,7 +282,7 @@ Return a joyful JSON evaluation object from RoboBuddy.
         attemptedModels,
       };
     } catch (err: any) {
-      lastError = err?.message || 'Lỗi kết nối mạng';
+      lastError = err?.message || 'Network connection error';
       console.warn(`[Gemini Fallback] Exception with ${currentModel}:`, err);
       if (onRetryModel && i < modelsToAttempt.length - 1) {
         onRetryModel(modelsToAttempt[i + 1], lastError);
@@ -298,7 +298,7 @@ Return a joyful JSON evaluation object from RoboBuddy.
   return {
     success: true,
     data: fallbackData,
-    modelUsed: 'RoboBuddy Smart Engine (Dự phòng thông minh)',
+    modelUsed: 'RoboBuddy Smart Engine (Smart Fallback)',
     attemptedModels,
     isOfflineFallback: true,
   };
