@@ -322,7 +322,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
         {/* Preview Link Button & Close */}
         <div className="pt-2 flex items-center justify-between gap-3">
           <a
-            href={studentShareUrl}
+            href={shortStudentUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs font-bold text-pink-600 hover:text-pink-800 flex items-center gap-1 underline"
