@@ -386,15 +386,16 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-zinc-900">
-                Teacher Studio • Video & Lesson Creator
+                Teacher Studio • Soạn Bài & Quản Lý Video
               </h2>
               <p className="text-xs font-bold text-zinc-500">
-                Quản lý các Unit bài học, tải video beat và tạo bài tập cho học sinh!
+                Manage lesson units, upload beat videos and assign missions for students! • Quản lý các Unit bài học, tải video beat và tạo bài tập cho học sinh!
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="p-2 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition cursor-pointer"
           >
@@ -408,11 +409,11 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xl">📚</span>
               <label className="text-xs font-black text-amber-950 uppercase">
-                Danh sách bài đã giao trên App:
+                Assigned Lessons • Danh sách bài đã giao trên App:
               </label>
             </div>
             <span className="text-xs font-black text-amber-900 bg-amber-200/90 px-3 py-1 rounded-full shadow-sm">
-              Đã giao: {lessons.length} Units 🌟
+              Total: {lessons.length} Units • Đã giao {lessons.length} bài 🌟
             </span>
           </div>
 
@@ -425,7 +426,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             >
               {lessons.map((l, idx) => (
                 <option key={l.id} value={l.id}>
-                  Unit {idx + 1}: {l.title} ({l.bpm} BPM) • {l.lyricsMode === 'karaoke_video' ? '🎬 Video Karaoke' : '📝 Lời text'}
+                  Unit {idx + 1}: {l.title} ({l.bpm} BPM) • {l.lyricsMode === 'karaoke_video' ? '🎬 Video Karaoke' : '📝 Text Lyrics'}
                 </option>
               ))}
             </select>
@@ -442,7 +443,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   {selectedDropdownLesson.gradeLevel} • {selectedDropdownLesson.bpm} BPM •{' '}
                   {selectedDropdownLesson.lyricsMode === 'karaoke_video'
                     ? '🎬 Video Karaoke'
-                    : `📝 ${selectedDropdownLesson.lyrics.length} câu lời hát`}
+                    : `📝 ${selectedDropdownLesson.lyrics.length} lines • câu lời hát`}
                 </span>
               </div>
 
@@ -454,29 +455,29 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     onClose();
                   }}
                   className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-sm transition cursor-pointer"
-                  title="Dạy và hiển thị bài này ngay cho học sinh"
+                  title="Teach and display this chant now for students • Dạy và hiển thị bài này ngay cho học sinh"
                 >
-                  👉 Dạy bài này ngay
+                  👉 Teach Now • Dạy bài này ngay
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleStartEditLesson(selectedDropdownLesson)}
                   className="px-3 py-1.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1"
-                  title="Chỉnh sửa nội dung Unit này"
+                  title="Edit unit content • Chỉnh sửa nội dung Unit này"
                 >
                   <Edit className="w-3.5 h-3.5" />
-                  <span>Chỉnh sửa</span>
+                  <span>Edit • Sửa</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setSharingLesson(selectedDropdownLesson)}
                   className="px-3 py-1.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-black shadow-sm transition cursor-pointer flex items-center gap-1"
-                  title="Xuất Link Heyzine cho Unit này"
+                  title="Share Heyzine Link for this unit • Xuất Link Heyzine cho Unit này"
                 >
                   <Share2 className="w-3.5 h-3.5" />
-                  <span>Xuất Heyzine</span>
+                  <span>Share • Xuất Heyzine</span>
                 </button>
 
                 {lessons.length > 1 && (
@@ -484,7 +485,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     type="button"
                     onClick={() => onDeleteLesson(selectedDropdownLesson.id)}
                     className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer transition"
-                    title="Xóa Unit này"
+                    title="Delete unit • Xóa Unit này"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -498,7 +499,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
         <form onSubmit={handleSaveAndAssign} className="space-y-4 pt-2 border-t-2 border-zinc-100">
           <div className="flex items-center justify-between">
             <h3 className="text-sm sm:text-base font-black text-zinc-900 uppercase tracking-wide flex items-center gap-2">
-              <span>{editingLessonId ? '✏️ CHỈNH SỬA BÀI HỌC (EDIT LESSON):' : '➕ THÊM BÀI HỌC MỚI (ADD NEW SONG):'}</span>
+              <span>{editingLessonId ? '✏️ EDIT LESSON • CHỈNH SỬA BÀI HỌC:' : '➕ ADD NEW SONG • THÊM BÀI HỌC MỚI:'}</span>
             </h3>
 
             {editingLessonId && (
@@ -507,7 +508,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 onClick={handleCancelEdit}
                 className="text-xs font-bold text-zinc-500 hover:text-zinc-800 underline cursor-pointer"
               >
-                Hủy chế độ sửa (Tạo bài mới)
+                Cancel Edit • Hủy sửa (Tạo bài mới)
               </button>
             )}
           </div>
@@ -516,14 +517,14 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             {/* Song Title */}
             <div>
               <label className="text-xs font-black text-zinc-700 block mb-1">
-                Tên Bài Hát (Song Title / Unit):
+                Song Title / Unit • Tên Bài Hát:
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="VD: Unit 1 All about me"
+                placeholder="Ex: Unit 1 All about me"
                 className="w-full text-sm font-bold text-zinc-800 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none"
               />
             </div>
@@ -532,7 +533,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-xs font-black text-zinc-700 block mb-1">
-                  Khối Lớp:
+                  Grade Level • Khối Lớp:
                 </label>
                 <select
                   value={gradeLevel}
@@ -549,7 +550,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
               <div>
                 <label className="text-xs font-black text-zinc-700 block mb-1">
-                  Tốc độ (BPM):
+                  Tempo (BPM) • Tốc độ:
                 </label>
                 <input
                   type="number"
@@ -568,10 +569,10 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="flex items-center justify-between flex-wrap gap-1">
               <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
                 <Video className="w-4 h-4 text-pink-600" />
-                <span>1. Video Bài Hát Mẫu (Song Video):</span>
+                <span>1. Song Video • Video Bài Hát Mẫu (Step 1):</span>
               </span>
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                📱 Xem được trên Điện Thoại & Tablet
+                📱 Phone & Tablet Compatible • Xem được trên ĐT & Tablet
               </span>
             </div>
 
@@ -579,9 +580,9 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-300 text-xs text-amber-900 flex items-start gap-2">
               <span className="text-base leading-none">💡</span>
               <div className="text-[11px] leading-tight space-y-0.5">
-                <span className="font-bold text-amber-950 block">Để học sinh xem được video trên mọi thiết bị (Điện thoại, iPad/Tablet, Máy tính):</span>
+                <span className="font-bold text-amber-950 block">For 100% Phone & Tablet support • Để xem được trên mọi thiết bị:</span>
                 <span className="text-zinc-600 block">
-                  Khuyên dùng <b>Link YouTube</b> hoặc <b>Link Google Drive</b> (chọn quyền <i>"Bất kỳ ai có đường liên kết đều có thể xem"</i>). Nếu tải file từ máy tính thì video chỉ xem được trên chính máy này.
+                  Recommended: <b>YouTube Link</b> or <b>Google Drive Link</b> (set to <i>"Anyone with the link can view"</i>). Local computer files can only be played on this device. • Khuyên dùng Link YouTube hoặc Google Drive. File từ máy tính chỉ xem được trên máy này.
                 </span>
               </div>
             </div>
@@ -591,9 +592,9 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
               <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-pink-300 rounded-xl bg-white hover:bg-pink-50 transition cursor-pointer text-center">
                 <Upload className="w-6 h-6 text-pink-500 mb-1" />
                 <span className="text-xs font-bold text-zinc-700">
-                  {videoFileName ? videoFileName : 'Tải video từ máy (MP4, WebM)'}
+                  {videoFileName ? videoFileName : 'Upload video from PC (MP4, WebM) • Tải video từ máy'}
                 </span>
-                <span className="text-[10px] text-zinc-400">Xem thử trên máy tính giáo viên</span>
+                <span className="text-[10px] text-zinc-400">Teacher PC Preview • Xem thử trên máy giáo viên</span>
                 <input
                   type="file"
                   accept="video/*"
@@ -605,12 +606,12 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
               {/* Option B: Enter URL */}
               <div className="flex flex-col justify-center space-y-1">
                 <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
-                  <span>Hoặc dán Link YouTube / Google Drive:</span>
-                  <span className="text-[10px] text-pink-600 font-extrabold">Khuyên dùng ⭐</span>
+                  <span>Or paste YouTube / Google Drive Link • Hoặc dán link:</span>
+                  <span className="text-[10px] text-pink-600 font-extrabold">Recommended ⭐ • Khuyên dùng</span>
                 </label>
                 <input
                   type="url"
-                  placeholder="Link YouTube hoặc link Google Drive (hoặc file .mp4)"
+                  placeholder="YouTube, Google Drive or .mp4 URL"
                   value={customVideoUrl}
                   onChange={(e) => {
                     setCustomVideoUrl(e.target.value);
@@ -621,7 +622,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   className="w-full text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-pink-500 bg-white font-mono"
                 />
                 <span className="text-[10px] text-zinc-400">
-                  (Hỗ trợ YouTube, YouTube Shorts, Google Drive, Dropbox)
+                  (Supports YouTube, YouTube Shorts, Google Drive, Dropbox)
                 </span>
               </div>
             </div>
@@ -632,10 +633,10 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="flex items-center justify-between flex-wrap gap-1">
               <span className="text-xs font-black text-emerald-900 uppercase flex items-center gap-1.5">
                 <Music className="w-4 h-4 text-emerald-600" />
-                <span>2. Backing Beat (Nhạc Đệm / Beat Bài Hát):</span>
+                <span>2. Backing Beat • Nhạc Đệm / Beat Bài Hát (Step 2):</span>
               </span>
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                🎵 Tương thích Tablet & Phone
+                🎵 Phone & Tablet Compatible • Tương thích Tablet & Phone
               </span>
             </div>
 
@@ -643,9 +644,9 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-300 text-xs text-amber-900 flex items-start gap-2">
               <span className="text-base leading-none">💡</span>
               <div className="text-[11px] leading-tight space-y-0.5">
-                <span className="font-bold text-amber-950 block">Để học sinh nghe được Beat trên mọi thiết bị (Điện thoại, iPad/Tablet):</span>
+                <span className="font-bold text-amber-950 block">Mobile & Tablet Sound • Để phát Beat trên mọi thiết bị (Phone, iPad/Tablet):</span>
                 <span className="text-zinc-600 block">
-                  Dán <b>Link MP3 từ Google Drive</b> hoặc <b>Dropbox</b> (chọn quyền <i>"Bất kỳ ai có đường liên kết đều có thể xem"</i>). Nếu tải file từ máy tính hoặc để trống, học sinh sẽ tự động dùng <b>Beat Nhịp Điệu Thông Minh (Smart Beat)</b> sẵn có.
+                  Paste an <b>MP3 Link from Google Drive or Dropbox</b> (set to <i>"Anyone with the link can view"</i>). If left empty or using a local file, students will automatically practice with the <b>Smart Procedural Beat (Smart Beat)</b>. • Dán link MP3 từ Google Drive/Dropbox. Nếu để trống, app tự động phát Beat Nhịp Điệu Thông Minh sẵn có.
                 </span>
               </div>
             </div>
@@ -658,10 +659,10 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   <Video className="w-4 h-4 text-emerald-500" />
                 </div>
                 <span className="text-xs font-black text-emerald-800">
-                  Tải Beat hoặc Video (MP3, WAV, MP4, WebM)
+                  Upload Beat or Video • Tải Beat / Video (MP3, WAV, MP4, WebM)
                 </span>
                 <span className="text-[10px] text-zinc-500">
-                  Hỗ trợ file âm thanh hoặc video (tự động trích xuất beat)
+                  Audio or video media supported • Hỗ trợ file âm thanh hoặc video
                 </span>
                 <input
                   type="file"
@@ -676,7 +677,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black text-emerald-900 flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Trích xuất Beat từ Video gốc (Bước 1):
+                    Extract Beat from Video • Trích xuất Beat từ Video (Bước 1):
                   </span>
                   {videoFileName && (
                     <span className="text-[10px] font-bold text-zinc-500 truncate max-w-[120px]" title={videoFileName}>
@@ -691,14 +692,14 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     disabled={isExtracting}
                     onClick={() => handleExtractFromStep1Video('original')}
                     className="px-2 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-[11px] font-black flex items-center justify-center gap-1 shadow-sm transition active:scale-95 cursor-pointer"
-                    title="Trích xuất toàn bộ luồng âm thanh gốc từ video ở Bước 1"
+                    title="Extract original audio track from Step 1 video • Trích xuất âm thanh gốc"
                   >
                     {isExtracting && extractionMode === 'original' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Music className="w-3.5 h-3.5" />
                     )}
-                    <span>1. Âm thanh gốc</span>
+                    <span>1. Original • Gốc</span>
                   </button>
 
                   <button
@@ -706,19 +707,19 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     disabled={isExtracting}
                     onClick={() => handleExtractFromStep1Video('vocal_reduced')}
                     className="px-2 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-[11px] font-black flex items-center justify-center gap-1 shadow-sm transition active:scale-95 cursor-pointer"
-                    title="Lọc giảm lời hát để giữ lại nhịp trống & nhạc đệm karaoke"
+                    title="Reduce vocals to keep karaoke drums and backing beat • Tách lời giữ lại beat"
                   >
                     {isExtracting && extractionMode === 'vocal_reduced' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Scissors className="w-3.5 h-3.5" />
                     )}
-                    <span>2. Tách lời (Beat)</span>
+                    <span>2. Beat (Vocal Reduced)</span>
                   </button>
                 </div>
 
                 <p className="text-[10px] text-zinc-500 leading-tight">
-                  ✨ <strong>Web Audio Engine:</strong> Bóc tách luồng âm thanh/nhạc nền trực tiếp trong trình duyệt mượt mà.
+                  ✨ <strong>Web Audio Engine:</strong> Seamless in-browser audio extraction • Bóc tách luồng âm thanh trực tiếp trong trình duyệt.
                 </p>
               </div>
             </div>
@@ -728,13 +729,13 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
               <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
                 <span className="flex items-center gap-1">
                   <Music className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Hoặc dán Link Beat MP3 (Google Drive / Dropbox / Link web):</span>
+                  <span>Or paste MP3 Link (Google Drive / Dropbox) • Hoặc dán link Beat MP3:</span>
                 </span>
-                <span className="text-[10px] text-emerald-700 font-extrabold">Chuẩn mọi thiết bị ⭐</span>
+                <span className="text-[10px] text-emerald-700 font-extrabold">Device Friendly ⭐ • Chuẩn mọi thiết bị</span>
               </label>
               <input
                 type="url"
-                placeholder="Dán link Google Drive chứa file MP3 beat hoặc link .mp3"
+                placeholder="Google Drive MP3 link, Dropbox link or direct .mp3 URL"
                 value={beatFileUrl && !beatFileUrl.startsWith('blob:') ? beatFileUrl : ''}
                 onChange={(e) => {
                   const val = e.target.value.trim();
@@ -749,7 +750,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 className="w-full text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-emerald-500 bg-white font-mono"
               />
               <span className="text-[10px] text-zinc-400 block">
-                Hỗ trợ link Google Drive chia sẻ công khai, Dropbox (tự chuyển direct stream), hoặc link file .mp3 trực tiếp.
+                Supports public Google Drive links, Dropbox (direct stream), or direct .mp3 file URLs.
               </span>
             </div>
 
@@ -769,7 +770,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                     type="button"
                     onClick={handleTogglePreview}
                     className="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-md transition transform active:scale-95 cursor-pointer shrink-0"
-                    title={isPreviewPlaying ? 'Tạm dừng nghe thử' : 'Nghe thử beat'}
+                    title={isPreviewPlaying ? 'Pause preview • Tạm dừng' : 'Play preview • Nghe thử'}
                   >
                     {isPreviewPlaying ? (
                       <Pause className="w-4 h-4 fill-white" />
@@ -782,7 +783,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                       {beatFileName}
                     </span>
                     <span className="text-[10px] text-emerald-800 font-bold block">
-                      {isPreviewPlaying ? 'Đang phát nghe thử...' : 'Bấm Play để nghe thử Beat'}{' '}
+                      {isPreviewPlaying ? 'Playing preview • Đang phát nghe thử...' : 'Tap Play to preview beat • Bấm Play để nghe thử Beat'}{' '}
                       {beatDuration ? `• ${beatDuration}s` : ''}
                     </span>
                   </div>
@@ -793,14 +794,14 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   onClick={handleResetBeat}
                   className="text-[11px] font-black text-rose-600 hover:text-rose-800 bg-white hover:bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200 transition cursor-pointer"
                 >
-                  Quay lại Beat đàn piano mặc định
+                  Reset Beat • Đặt lại Beat piano
                 </button>
               </div>
             ) : (
               <div className="text-xs text-emerald-900 bg-white/90 p-3 rounded-xl border border-emerald-200 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  <strong>Smart Kids Rhythm Engine:</strong> Nếu không tải file hoặc không trích xuất beat, app sẽ tự động đệm hợp âm piano & trống vui nhộn theo BPM {bpm}!
+                  <strong>Smart Kids Rhythm Engine:</strong> Default lively piano chord & bouncy percussion synth automatically active at {bpm} BPM!
                 </span>
               </div>
             )}
@@ -811,7 +812,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-xs font-black text-pink-900 uppercase flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-pink-600" />
-                <span>3. Lời Bài Hát Cho Học Sinh (Có 2 Sự Lựa Chọn: Text Hoặc Đăng Video):</span>
+                <span>3. Student Chant Lyrics • Lời Bài Hát (Text vs Karaoke Video):</span>
               </span>
             </div>
 
@@ -827,7 +828,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>📝 Lựa chọn 1: Chọn Text (Lời văn bản)</span>
+                <span>📝 Option 1: Text Lyrics • Lời văn bản</span>
               </button>
 
               <button
@@ -840,14 +841,14 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                 }`}
               >
                 <Video className="w-3.5 h-3.5" />
-                <span>🎬 Lựa chọn 2: Chọn Đăng Video (Karaoke có lời)</span>
+                <span>🎬 Option 2: Karaoke Video • Video có lời</span>
               </button>
             </div>
 
             {lyricsMode === 'text' ? (
               <div className="space-y-1.5 animate-fade-in">
                 <label className="text-xs font-bold text-zinc-700 block">
-                  Nhập lời bài hát (mỗi câu một dòng):
+                  Chant Lyrics (one line per line) • Nhập lời bài hát (mỗi câu một dòng):
                 </label>
                 <textarea
                   rows={4}
@@ -860,19 +861,19 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
             ) : (
               <div className="space-y-3 animate-fade-in bg-white p-3.5 rounded-xl border border-purple-200">
                 <p className="text-xs font-bold text-purple-900">
-                  🎬 Chèn video có chữ karaoke chạy để học sinh vừa nhìn màn hình vừa hát thực hành:
+                  🎬 Embed video with animated lyrics for students to watch and chant along • Chèn video karaoke để học sinh vừa nhìn vừa hát:
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Karaoke Video Upload */}
                   <div>
                     <label className="text-[11px] font-bold text-zinc-700 block mb-1">
-                      Tải file Video Karaoke từ máy (MP4, WebM):
+                      Upload Video (MP4, WebM) • Tải video từ máy:
                     </label>
                     <label className="flex flex-col items-center justify-center p-3 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
                       <Upload className="w-5 h-5 text-purple-600 mb-1" />
                       <span className="text-xs font-bold text-zinc-800">
-                        {karaokeVideoFileName || 'Chọn video karaoke từ máy'}
+                        {karaokeVideoFileName || 'Select karaoke video • Chọn video karaoke từ máy'}
                       </span>
                       <input
                         type="file"
@@ -886,12 +887,12 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   {/* Karaoke YouTube or Google Drive Link */}
                   <div>
                     <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between mb-1">
-                      <span>Dán Link YouTube / Google Drive:</span>
-                      <span className="text-[10px] text-purple-600 font-extrabold">Khuyên dùng ⭐</span>
+                      <span>YouTube / Google Drive Link • Dán link:</span>
+                      <span className="text-[10px] text-purple-600 font-extrabold">Recommended ⭐ • Khuyên dùng</span>
                     </label>
                     <input
                       type="url"
-                      placeholder="Link YouTube hoặc Google Drive Karaoke"
+                      placeholder="YouTube or Google Drive URL"
                       value={karaokeCustomUrl}
                       onChange={(e) => {
                         setKaraokeCustomUrl(e.target.value);
@@ -900,7 +901,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                       className="w-full text-xs font-bold text-zinc-800 bg-zinc-50 p-2.5 rounded-xl border border-zinc-300 focus:border-purple-500 outline-none"
                     />
                     <span className="text-[10px] text-zinc-500 block mt-1">
-                      Hỗ trợ YouTube, YouTube Shorts, Google Drive. Xem mượt 100% trên Điện thoại & Tablet!
+                      Supports YouTube, Shorts, Drive. 100% Mobile & Tablet Compatible!
                     </span>
                   </div>
                 </div>
@@ -909,7 +910,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2 rounded-lg border border-emerald-200 flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="truncate">
-                      Đã chọn Video Karaoke: {karaokeVideoFileName || karaokeCustomUrl}
+                      Selected Video • Đã chọn: {karaokeVideoFileName || karaokeCustomUrl}
                     </span>
                   </div>
                 )}
@@ -920,7 +921,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
           {/* Mission Instruction for kids */}
           <div>
             <label className="text-xs font-black text-zinc-700 block mb-1">
-              Lời Dặn Dò / Nhiệm Vụ Cho Học Sinh (Mission Task):
+              Mission Task for Students • Lời Dặn Dò / Nhiệm Vụ Cho Học Sinh:
             </label>
             <input
               type="text"
@@ -937,7 +938,7 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-xl shadow-green-300 flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95"
             >
               <CheckCircle2 className="w-5 h-5" />
-              <span>{editingLessonId ? 'Lưu Thay Đổi Bài Học! 💾' : 'Lưu & Giao Nhiệm Vụ Cho Học Sinh! 🚀'}</span>
+              <span>{editingLessonId ? 'Save Changes! • Lưu Thay Đổi Bài Học! 💾' : 'Save & Assign Mission! • Lưu & Giao Nhiệm Vụ! 🚀'}</span>
             </button>
           </div>
         </form>
