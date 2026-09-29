@@ -143,7 +143,7 @@ export async function extractAudioFromMedia(
     // Fetch URL
     const response = await fetch(source);
     if (!response.ok) {
-      throw new Error(`Không thể tải video từ URL (Mã lỗi: ${response.status})`);
+      throw new Error(`Unable to load video from URL (Error code: ${response.status})`);
     }
     arrayBuffer = await response.arrayBuffer();
   }
