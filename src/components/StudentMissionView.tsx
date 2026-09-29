@@ -35,7 +35,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { SongLesson, RoboBuddyFeedback } from '../types/kidsMusic';
-import { kidsBeatEngine } from '../audio/kidsBeatEngine';
+import { kidsBeatEngine, ChantBeatStyle } from '../audio/kidsBeatEngine';
 import { RoboBuddyMascot } from './RoboBuddyMascot';
 import { SkillRadarChart } from './SkillRadarChart';
 import { ChantRhythmGameModal } from './ChantRhythmGameModal';
@@ -196,6 +196,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [beatFileName, setBeatFileName] = useState<string | null>(null);
   const [beatVolume, setBeatVolume] = useState<number>(0.7);
   const [isRhythmGameOpen, setIsRhythmGameOpen] = useState(false);
+  const [selectedBeatStyle, setSelectedBeatStyle] = useState<ChantBeatStyle>('pop_chant');
 
   // Step 2: Microphone & Voice Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -1065,8 +1066,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                     </div>
                   )}
                   {effectiveKaraokeUrl && (
-                    <p className="text-[11px] font-bold text-center text-purple-800">
-                      📺 Hãy nhìn vào màn hình video để hát theo và bấm Micro ở Bước 2 để thu âm nhé!
+                    <p className="text-[11px] font-bold text-center text-emerald-800">
+                      📺 Hãy nhìn vào video và bấm nút Micro màu xanh ngay bên dưới để thu âm nhé! 👇
                     </p>
                   )}
                 </div>
@@ -1083,6 +1084,136 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   ))}
                 </div>
               )}
+
+              {/* DIRECT RECORDING STATION RIGHT BELOW VIDEO / LYRICS FOR HEYZINE & MOBILE */}
+              <div className="bg-gradient-to-r from-emerald-100 via-teal-50 to-green-100 p-3.5 rounded-2xl border-2 border-emerald-300 shadow-sm flex flex-col items-center text-center space-y-2.5 mt-2">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-black text-emerald-950 uppercase flex items-center gap-1.5">
+                    <Mic className="w-4 h-4 text-emerald-600 animate-bounce" />
+                    <span>Thu Âm Trực Tiếp Theo Video (Sing Along):</span>
+                  </span>
+                  <span className="text-[10px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
+                    📱 Vừa xem vừa thu âm
+                  </span>
+                </div>
+
+                {countdown !== null ? (
+                  <div className="py-2 animate-scale-up">
+                    <span className="text-4xl sm:text-5xl font-black text-emerald-600 animate-ping block">
+                      {countdown}
+                    </span>
+                    <span className="text-xs font-bold text-zinc-700 mt-1 block">
+                      Chuẩn bị hát theo video nhé! 🎈 (Get ready!)
+                    </span>
+                  </div>
+                ) : isRecording ? (
+                  <div className="space-y-2.5 py-1 w-full animate-fade-in">
+                    <div className="flex items-center justify-center gap-2 text-rose-600 font-black text-xs sm:text-sm animate-pulse">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <span>
+                        Đang thu âm: {Math.floor(recordTimerSeconds / 60)}:
+                        {(recordTimerSeconds % 60).toString().padStart(2, '0')} - Hãy nhìn video và hát thật to nhé!
+                      </span>
+                    </div>
+
+                    {/* Dancing Voice Visualizer */}
+                    <div className="flex items-center justify-center gap-1.5 h-8 py-1">
+                      {[1, 2, 3, 4, 5, 6, 7].map((barIdx) => {
+                        const barHeight = Math.max(
+                          6,
+                          Math.min(32, (liveMicLevel * (0.5 + (barIdx % 3) * 0.3)) / 2)
+                        );
+                        return (
+                          <div
+                            key={barIdx}
+                            style={{ height: `${barHeight}px` }}
+                            className="w-2 rounded-full bg-gradient-to-t from-emerald-600 to-green-400 transition-all duration-75"
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Stop button */}
+                    <button
+                      type="button"
+                      onClick={handleStopRecord}
+                      className="px-5 py-2 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-1.5 mx-auto cursor-pointer transition transform active:scale-95"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                      <span>Dừng Thu Âm (Stop Recording)</span>
+                    </button>
+                  </div>
+                ) : recordedUrl ? (
+                  /* Recording Completed Station: Playback & Submit right here! */
+                  <div className="w-full space-y-2 pt-0.5 animate-scale-up">
+                    <div className="flex items-center justify-center gap-1.5 text-xs font-black text-emerald-800">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                      <span>Đã thu âm xong giọng hát! Em có thể nghe lại hoặc nộp bài ngay:</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      {/* Play recorded voice */}
+                      <button
+                        type="button"
+                        onClick={handleTogglePlayRecording}
+                        className={`px-4 py-2 rounded-xl font-black text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95 ${
+                          isPlayingRecording
+                            ? 'bg-rose-500 text-white'
+                            : 'bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300'
+                        }`}
+                      >
+                        {isPlayingRecording ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        <span>{isPlayingRecording ? 'Tạm dừng' : 'Nghe lại giọng em'}</span>
+                      </button>
+
+                      {/* Re-record */}
+                      <button
+                        type="button"
+                        onClick={handleStartRecord}
+                        className="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-black text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Thu lại 🔄</span>
+                      </button>
+
+                      {/* Submit right here! */}
+                      <button
+                        type="button"
+                        onClick={handleSubmitMission}
+                        disabled={isEvaluating}
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition transform active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        {isEvaluating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>AI đang chấm điểm...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            <span>Nộp Bài Chấm Điểm Ngay 🚀</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Primary Call-to-action */
+                  <div className="space-y-1 w-full">
+                    <button
+                      type="button"
+                      onClick={handleStartRecord}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 mx-auto cursor-pointer transition transform active:scale-95"
+                    >
+                      <Mic className="w-4 h-4" />
+                      <span>Bật Micro & Thu Âm Ngay Theo Video! 🎈</span>
+                    </button>
+                    <span className="text-[10px] text-zinc-500 font-bold block">
+                      💡 Vừa nhìn video và chữ vừa hát trực tiếp không cần cuộn trang!
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1148,11 +1279,11 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   2
                 </span>
                 <div>
-                  <h2 className="text-lg font-black text-pink-700">
-                    Luyện Hát Theo Beat & Thu Âm 🥁
+                  <h2 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
+                    <span>Thử Thách Tiết Tấu Chants Sáng Tạo 🌟</span>
                   </h2>
                   <span className="text-[11px] font-bold text-zinc-500">
-                    Sing Along with the Beat & Record Voice
+                    Creative Chant Beat Challenge • Khám phá nhịp trống cùng AI Buddy
                   </span>
                 </div>
               </div>
@@ -1182,34 +1313,50 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             </div>
 
             {/* Sync Notice depending on practice mode */}
-            {practiceMode === 'video_beat' ? (
-              <div className="bg-pink-50 p-2.5 rounded-xl border border-pink-200 text-xs font-bold text-pink-800 flex items-center gap-2">
-                <Video className="w-4 h-4 text-pink-600 shrink-0" />
-                <span>🎬 Video bài hát sẽ tự động phát đồng bộ ngay khi em bấm micro thu âm bên dưới!</span>
-              </div>
-            ) : (
-              <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
-                <Music className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>🎵 Lắng nghe tiếng đệm trống và đàn piano theo nhịp 1 - 2 - 3 - 4 để luyện hát nhé!</span>
-              </div>
-            )}
+            <div className="bg-gradient-to-r from-amber-50 to-pink-50 p-2.5 rounded-xl border border-pink-200 text-xs font-bold text-pink-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>🥁 <b>Thử thách nhịp phách:</b> Chọn phong cách trống bên dưới, bấm <b>Bật Beat</b> để cảm nhận nhịp 1 - 2 - 3 - 4 và luyện chants sáng tạo!</span>
+            </div>
 
-            {/* Beat Listening Bar (Instrumental Backing Track) */}
+            {/* Beat Listening Bar (Creative Chant Beat Challenge) */}
             <div className="bg-gradient-to-r from-orange-100 via-pink-100 to-yellow-100 p-4 rounded-2xl border-2 border-pink-200 flex flex-col items-center gap-3">
-              <div className="w-full flex items-center justify-between">
+              <div className="w-full flex items-center justify-between flex-wrap gap-1">
                 <span className="text-xs font-black text-pink-800 uppercase flex items-center gap-1.5">
-                  <Music className="w-3.5 h-3.5" />
-                  <span>A. Beat Nhạc Theo Bài Hát (Backing Beat):</span>
+                  <Music className="w-3.5 h-3.5 text-pink-600" />
+                  <span>A. Chọn Phong Cách Beat Trống Chants:</span>
                 </span>
-                {beatFileName ? (
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full truncate max-w-[140px]">
-                    🎵 {beatFileName}
-                  </span>
-                ) : (
-                  <span className="text-[10px] bg-pink-200 text-pink-800 font-bold px-2 py-0.5 rounded-full">
-                    🎹 Smart Kids Rhythm Synth
-                  </span>
-                )}
+                <span className="text-[10px] bg-pink-200 text-pink-800 font-bold px-2 py-0.5 rounded-full">
+                  🥁 4 Điệu Beat Tiểu Học
+                </span>
+              </div>
+
+              {/* 4 Beat Style Selector Buttons */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full">
+                {[
+                  { id: 'pop_chant', label: 'Chant Pop 🥁', desc: 'Sôi động, bắt tai' },
+                  { id: 'hiphop_kids', label: 'Hip-Hop 🚀', desc: 'Trống nẩy, hiện đại' },
+                  { id: 'clap_march', label: 'Clap March 👏', desc: 'Vỗ tay gõ phách' },
+                  { id: 'rocking', label: 'Rocking 🎸', desc: 'Năng lượng hào hứng' },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBeatStyle(st.id as ChantBeatStyle);
+                      kidsBeatEngine.setChantBeatStyle(st.id as ChantBeatStyle);
+                    }}
+                    className={`p-2 rounded-xl text-left border transition cursor-pointer transform active:scale-95 ${
+                      selectedBeatStyle === st.id
+                        ? 'bg-gradient-to-br from-pink-500 to-rose-600 text-white border-pink-600 shadow-md scale-102'
+                        : 'bg-white/90 hover:bg-white text-zinc-800 border-pink-200 hover:border-pink-300'
+                    }`}
+                  >
+                    <span className="text-xs font-black block">{st.label}</span>
+                    <span className={`text-[10px] block leading-tight ${selectedBeatStyle === st.id ? 'text-pink-100' : 'text-zinc-500'}`}>
+                      {st.desc}
+                    </span>
+                  </button>
+                ))}
               </div>
 
               {/* 4 Animated Beat Bubbles */}
@@ -1361,12 +1508,15 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </div>
             </div>
 
-            {/* Step B: Microphone Recording Station */}
+            {/* Step B: Microphone Recording Station for Creative Beat Challenge */}
             <div ref={recordingSectionRef} className="bg-yellow-50 p-4 rounded-2xl border-2 border-yellow-300 flex flex-col items-center text-center space-y-3">
               <span className="text-xs font-black text-amber-900 uppercase flex items-center gap-1.5">
                 <Mic className="w-3.5 h-3.5 text-amber-600" />
-                <span>B. Micro Thu Lại Giọng Hát Của Học Sinh:</span>
+                <span>B. Thu Âm Thử Thách Tiết Tấu Sáng Tạo (Beat Challenge):</span>
               </span>
+              <p className="text-[11px] text-zinc-600 max-w-md">
+                Bật beat nhịp điệu ở trên, bấm Micro để hô khẩu hiệu/hát chants theo tiếng trống và nộp bài nhận danh hiệu <b>Creative Chant Master</b> nhé! 🌟
+              </p>
 
               {countdown !== null ? (
                 <div className="py-4">
