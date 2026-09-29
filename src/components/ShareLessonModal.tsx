@@ -62,7 +62,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
 
   // Heyzine embed iframe URL
   const embedUrl = `${baseUrl}?lessonData=${encodedData}&embed=true`;
-  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="750" frameborder="0" allow="microphone; autoplay" style="border-radius: 24px; border: 4px solid #f472b6; box-shadow: 0 10px 25px rgba(0,0,0,0.1);"></iframe>`;
+  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="750" frameborder="0" allow="camera; microphone; autoplay; fullscreen" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" style="border-radius: 24px; border: 4px solid #f472b6; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; height: 750px;"></iframe>`;
 
   const handleCopyLink = async () => {
     try {
@@ -146,6 +146,24 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               👉 <b>Cách khắc phục để xem được 100% trên Điện thoại & Tablet:</b>
               <br />
               Thầy/Cô hãy bấm <b>Chỉnh sửa bài học</b> ➔ dán <b>Link YouTube</b> hoặc <b>Link Google Drive</b> vào mục Video. Học sinh dùng bất kỳ thiết bị nào cũng xem mượt mà!
+            </div>
+          </div>
+        )}
+
+        {/* Warning if beat audio is a local blob from teacher PC */}
+        {Boolean(lesson.beatAudioUrl?.startsWith('blob:')) && (
+          <div className="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-400 text-emerald-950 space-y-2 animate-fade-in">
+            <div className="flex items-center gap-2 font-black text-xs text-emerald-800">
+              <Music className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span>LƯU Ý: Nhạc Beat đang là file tải từ máy tính (blob)!</span>
+            </div>
+            <p className="text-xs leading-relaxed text-emerald-900">
+              Khi học sinh mở bài tập trên <b>Điện thoại hoặc Máy tính bảng (iPad)</b>, ứng dụng sẽ <b>tự động phát Beat Nhịp Điệu Thông Minh</b> (Smart Beat drum & piano) để học sinh luôn luyện tập được mượt mà, không bị mất tiếng!
+            </p>
+            <div className="bg-white/90 p-2.5 rounded-xl text-xs font-bold text-emerald-900 border border-emerald-200">
+              💡 <b>Để học sinh nghe được file Beat riêng của bài hát:</b>
+              <br />
+              Thầy/Cô hãy tải file MP3 lên Google Drive (chọn <i>"Bất kỳ ai có đường liên kết đều xem được"</i>) rồi dán link vào mục <b>2. Backing Beat</b> trong Teacher Studio.
             </div>
           </div>
         )}
