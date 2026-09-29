@@ -1,3 +1,24 @@
+export function parseAudioSource(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+
+  // Google Drive Audio (direct download / stream link)
+  const gDriveMatch = trimmed.match(
+    /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/
+  );
+  if (gDriveMatch) {
+    return `https://docs.google.com/uc?export=download&id=${gDriveMatch[1]}`;
+  }
+
+  // Dropbox Direct Audio Stream
+  if (trimmed.includes('dropbox.com')) {
+    return trimmed.replace('dl=0', 'raw=1');
+  }
+
+  return trimmed;
+}
+
 export class KidsBeatEngine {
   private ctx: AudioContext | null = null;
   private isBeatPlaying: boolean = false;
@@ -29,6 +50,21 @@ export class KidsBeatEngine {
   private onBeatTickCallbacks: Set<(beat: number) => void> = new Set();
   private onBeatStateCallbacks: Set<(playing: boolean) => void> = new Set();
 
+  constructor() {
+    // Auto unlock on first user gesture for iOS Safari & Android Web Audio policy
+    if (typeof window !== 'undefined') {
+      const unlock = () => {
+        this.unlockAudioContext();
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('touchend', unlock);
+        window.removeEventListener('click', unlock);
+      };
+      window.addEventListener('touchstart', unlock, { passive: true });
+      window.addEventListener('touchend', unlock, { passive: true });
+      window.addEventListener('click', unlock, { passive: true });
+    }
+  }
+
   private initContext() {
     if (this.ctx && this.ctx.state !== 'closed') return;
     const AudioContextClass =
@@ -43,6 +79,24 @@ export class KidsBeatEngine {
 
     this.masterGain.connect(this.analyser);
     this.analyser.connect(this.ctx.destination);
+  }
+
+  // iOS Safari / Android Web Audio unlocker helper
+  public unlockAudioContext() {
+    this.initContext();
+    if (!this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+    try {
+      const buffer = this.ctx.createBuffer(1, 1, 22050);
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.ctx.destination);
+      source.start(0);
+    } catch {
+      // ignore
+    }
   }
 
   public setBpm(newBpm: number) {
@@ -66,19 +120,38 @@ export class KidsBeatEngine {
   public setCustomBeatAudio(url: string | null) {
     if (this.customBeatAudio) {
       this.customBeatAudio.pause();
+      this.customBeatAudio.src = '';
       this.customBeatAudio = null;
     }
-    if (url) {
-      this.customBeatAudio = new Audio(url);
-      this.customBeatAudio.volume = this.beatVolume;
-      this.customBeatAudio.loop = true;
+    const resolvedUrl = parseAudioSource(url);
+    if (resolvedUrl) {
+      try {
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.volume = this.beatVolume;
+        audio.loop = true;
+        // If file fails (e.g. invalid blob on remote student device, 404, or network issue),
+        // gracefully fall back to procedural Smart Kids Rhythm Synth so silence never happens!
+        audio.addEventListener('error', (e) => {
+          console.warn('Custom beat audio failed to load, falling back to smart beat synth:', e);
+          if (this.customBeatAudio === audio) {
+            this.customBeatAudio = null;
+          }
+        });
+        audio.src = resolvedUrl;
+        this.customBeatAudio = audio;
+      } catch (err) {
+        console.warn('Failed to init custom beat audio, using smart synth:', err);
+        this.customBeatAudio = null;
+      }
     }
   }
 
   public async startBeat() {
     this.initContext();
+    this.unlockAudioContext();
     if (this.ctx && this.ctx.state === 'suspended') {
-      await this.ctx.resume();
+      await this.ctx.resume().catch(() => {});
     }
     if (this.isBeatPlaying) return;
 
@@ -86,8 +159,13 @@ export class KidsBeatEngine {
     this.notifyBeatState(true);
 
     if (this.customBeatAudio) {
-      this.customBeatAudio.currentTime = 0;
-      this.customBeatAudio.play().catch((e) => console.log('Custom beat error', e));
+      try {
+        this.customBeatAudio.currentTime = 0;
+        await this.customBeatAudio.play();
+      } catch (e) {
+        console.warn('Custom beat play rejected, auto-fallback to smart synth:', e);
+        this.customBeatAudio = null;
+      }
     }
 
     this.lastBeatTime = performance.now();
