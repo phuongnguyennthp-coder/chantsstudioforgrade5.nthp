@@ -16,6 +16,8 @@ import {
   RotateCcw,
   Check,
   X,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 import { SongLesson } from './types/kidsMusic';
 import { INITIAL_LESSONS } from './data/kidLessons';
@@ -323,6 +325,45 @@ export default function App() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
+  // Fullscreen State & Handler
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    const doc = document as any;
+    const docEl = document.documentElement as any;
+    const isFs = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement);
+    if (!isFs) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const doc = document as any;
+      setIsFullscreen(Boolean(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
   // Decode lessonData from URL parameter if opened from Heyzine / shared link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -436,6 +477,15 @@ export default function App() {
                       🎓 Giao diện Học sinh
                     </span>
                   )}
+                  {/* Fullscreen Button for Student */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+                    title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+                  >
+                    {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-emerald-600" /> : <Maximize className="w-3.5 h-3.5 text-emerald-600" />}
+                    <span className="hidden sm:inline">{isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                  </button>
                   {/* Discrete Teacher switch with PIN lock */}
                   <button
                     onClick={() => setIsPinModalOpen(true)}
@@ -448,6 +498,15 @@ export default function App() {
                 </div>
               ) : (
                 <>
+                  {/* Fullscreen Button for Teacher */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="px-3 py-2 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
+                    title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+                  >
+                    {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-emerald-600" /> : <Maximize className="w-3.5 h-3.5 text-emerald-600" />}
+                    <span className="hidden sm:inline">{isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                  </button>
                   {/* Switch back to Student View */}
                   <button
                     onClick={() => {
