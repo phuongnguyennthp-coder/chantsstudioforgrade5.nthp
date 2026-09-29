@@ -24,7 +24,8 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
   onClose,
   lesson,
 }) => {
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedShortLink, setCopiedShortLink] = useState(false);
+  const [copiedFullLink, setCopiedFullLink] = useState(false);
   const [copiedIframe, setCopiedIframe] = useState(false);
 
   if (!isOpen) return null;
@@ -57,22 +58,35 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
   const pathname = window.location.pathname;
   const baseUrl = `${origin}${pathname}`;
 
-  // Direct student link
-  const studentShareUrl = `${baseUrl}?lessonData=${encodedData}&view=student`;
+  // 1. Clean Short Student Link (Fast & compact)
+  const shortStudentUrl = `${baseUrl}?lessonId=${lesson.id}&view=student`;
 
-  // Heyzine embed iframe URL
-  const embedUrl = `${baseUrl}?lessonData=${encodedData}&embed=true`;
-  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="750" frameborder="0" allow="camera; microphone; autoplay; fullscreen" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" style="border-radius: 24px; border: 4px solid #f472b6; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; height: 750px;"></iframe>`;
+  // 2. Full Standalone Portable Link
+  const fullStudentUrl = `${baseUrl}?lessonData=${encodedData}&view=student`;
 
-  const handleCopyLink = async () => {
+  // 3. Heyzine embed iframe URL (Clean & compact)
+  const embedUrl = `${baseUrl}?lessonId=${lesson.id}&embed=true`;
+  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="750" frameborder="0" allow="camera; microphone; autoplay; fullscreen" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" style="border-radius: 24px; border: 4px solid #f472b6; width: 100%; height: 750px;"></iframe>`;
+
+  const handleCopyShortLink = async () => {
     try {
-      await navigator.clipboard.writeText(studentShareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
+      await navigator.clipboard.writeText(shortStudentUrl);
+      setCopiedShortLink(true);
+      setTimeout(() => setCopiedShortLink(false), 2500);
     } catch {
-      // Fallback
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
+      setCopiedShortLink(true);
+      setTimeout(() => setCopiedShortLink(false), 2500);
+    }
+  };
+
+  const handleCopyFullLink = async () => {
+    try {
+      await navigator.clipboard.writeText(fullStudentUrl);
+      setCopiedFullLink(true);
+      setTimeout(() => setCopiedFullLink(false), 2500);
+    } catch {
+      setCopiedFullLink(true);
+      setTimeout(() => setCopiedFullLink(false), 2500);
     }
   };
 
@@ -169,29 +183,32 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
           </div>
         )}
 
-        {/* Section 1: Copy Direct Link */}
+        {/* Section 1: Copy Direct Link (Short & Clean) */}
         <div className="space-y-2">
-          <label className="text-xs font-black text-zinc-700 flex items-center gap-1.5 uppercase">
-            <Share2 className="w-4 h-4 text-pink-500" />
-            <span>1. Direct Student Link:</span>
+          <label className="text-xs font-black text-zinc-700 flex items-center justify-between uppercase">
+            <span className="flex items-center gap-1.5">
+              <Share2 className="w-4 h-4 text-pink-500" />
+              <span>1. Short Student Link (Clean & Fast):</span>
+            </span>
+            <span className="text-[10px] text-pink-600 font-extrabold normal-case">Recommended for sharing ⭐</span>
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
               readOnly
-              value={studentShareUrl}
+              value={shortStudentUrl}
               className="w-full text-xs font-mono font-medium text-zinc-700 bg-zinc-50 p-3 rounded-xl border-2 border-zinc-200 outline-none select-all"
             />
             <button
               type="button"
-              onClick={handleCopyLink}
+              onClick={handleCopyShortLink}
               className={`px-4 py-3 rounded-xl font-black text-xs flex items-center gap-1.5 transition transform active:scale-95 cursor-pointer shrink-0 shadow-md ${
-                copiedLink
+                copiedShortLink
                   ? 'bg-emerald-500 text-white shadow-emerald-200'
                   : 'bg-pink-600 hover:bg-pink-700 text-white shadow-pink-200'
               }`}
             >
-              {copiedLink ? (
+              {copiedShortLink ? (
                 <>
                   <Check className="w-4 h-4" />
                   <span>Copied!</span>
@@ -199,21 +216,58 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  <span>Copy Link</span>
+                  <span>Copy Short Link</span>
                 </>
               )}
             </button>
           </div>
           <p className="text-[11px] text-zinc-400">
-            💡 Students open this link to practice directly without requiring any login.
+            💡 Students tap this link to open the lesson directly without logging in.
           </p>
         </div>
 
-        {/* Section 2: Heyzine iFrame Embed Code */}
+        {/* Section 2: Full Portable Link */}
+        <div className="space-y-2">
+          <label className="text-xs font-black text-zinc-700 flex items-center gap-1.5 uppercase">
+            <Share2 className="w-4 h-4 text-purple-500" />
+            <span>2. Full Portable Link (Contains all lesson data):</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={fullStudentUrl}
+              className="w-full text-xs font-mono font-medium text-zinc-700 bg-zinc-50 p-2.5 rounded-xl border-2 border-zinc-200 outline-none select-all truncate"
+            />
+            <button
+              type="button"
+              onClick={handleCopyFullLink}
+              className={`px-4 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 transition transform active:scale-95 cursor-pointer shrink-0 shadow-md ${
+                copiedFullLink
+                  ? 'bg-emerald-500 text-white shadow-emerald-200'
+                  : 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-200'
+              }`}
+            >
+              {copiedFullLink ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Copy Full Link</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Section 3: Heyzine iFrame Embed Code */}
         <div className="space-y-2">
           <label className="text-xs font-black text-zinc-700 flex items-center gap-1.5 uppercase">
             <Code className="w-4 h-4 text-indigo-500" />
-            <span>2. Heyzine iFrame Embed Code (Flipbook Embed):</span>
+            <span>3. Heyzine iFrame Embed Code (Flipbook Embed):</span>
           </label>
           <div className="flex items-start gap-2">
             <textarea
