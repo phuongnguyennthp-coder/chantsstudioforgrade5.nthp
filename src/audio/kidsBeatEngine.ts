@@ -708,12 +708,13 @@ export class KidsBeatEngine {
     });
   }
 
-  public playStudentRecording(onEnded?: () => void) {
-    if (!this.recordedAudioUrl) return;
+  public playStudentRecording(onEnded?: () => void, customUrl?: string) {
+    const urlToPlay = customUrl || this.recordedAudioUrl;
+    if (!urlToPlay) return;
     if (this.playbackAudio) {
       this.playbackAudio.pause();
     }
-    this.playbackAudio = new Audio(this.recordedAudioUrl);
+    this.playbackAudio = new Audio(urlToPlay);
     this.playbackAudio.play();
     if (onEnded) {
       this.playbackAudio.onended = onEnded;
