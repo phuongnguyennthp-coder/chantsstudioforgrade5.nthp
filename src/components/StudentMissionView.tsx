@@ -842,9 +842,9 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     animate();
   };
 
-  const effectiveKaraokeUrl =
-    activeKaraokeUrl || lesson.karaokeVideoUrl || activeVideoUrl || lesson.videoUrl || '';
-  const youtubeEmbedUrl = getYoutubeEmbedUrl(activeVideoUrl || effectiveKaraokeUrl);
+  const effectiveVideoUrl =
+    activeVideoUrl || lesson.videoUrl || lesson.karaokeVideoUrl || '';
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(effectiveVideoUrl);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -1995,106 +1995,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
         </div>
       )}
 
-      {/* POPUP KARAOKE VIDEO MODAL */}
-      {showKaraokeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/75 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl border-4 border-purple-400 p-6 max-w-md w-full shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
-              <h3 className="text-base font-black text-zinc-900 flex items-center gap-2">
-                <Video className="w-5 h-5 text-purple-600" />
-                <span>Upload Karaoke Video with Lyrics</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowKaraokeModal(false)}
-                className="text-zinc-400 hover:text-zinc-600 text-lg font-black cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Option A: Upload local video file */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-zinc-700 block">
-                Method 1: Upload from computer (MP4, WebM)
-              </label>
-              <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
-                <Upload className="w-6 h-6 text-purple-600 mb-1" />
-                <span className="text-xs font-bold text-zinc-700">
-                  {karaokeUploadFileName || 'Select video file'}
-                </span>
-                <span className="text-[10px] text-zinc-500">Supports MP4, WebM</span>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const url = URL.createObjectURL(file);
-                      setActiveKaraokeUrl(url);
-                      setKaraokeUploadFileName(file.name);
-                      setLyricsChoice('karaoke_video');
-                      if (onUpdateLesson) {
-                        onUpdateLesson({
-                          ...lesson,
-                          lyricsMode: 'karaoke_video',
-                          karaokeVideoUrl: url,
-                        });
-                      }
-                      setShowKaraokeModal(false);
-                    }
-                  }}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            {/* Option B: Enter video URL / YouTube link */}
-            <div className="space-y-1.5 pt-2 border-t border-zinc-100">
-              <label className="text-xs font-black text-zinc-700 block">
-                Method 2: Paste YouTube / Karaoke Link
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  placeholder="https://www.youtube.com/watch?v=... or .mp4"
-                  value={customKaraokeInputUrl}
-                  onChange={(e) => setCustomKaraokeInputUrl(e.target.value)}
-                  className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-purple-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customKaraokeInputUrl.trim()) {
-                      setActiveKaraokeUrl(customKaraokeInputUrl.trim());
-                      setLyricsChoice('karaoke_video');
-                      if (onUpdateLesson) {
-                        onUpdateLesson({
-                          ...lesson,
-                          lyricsMode: 'karaoke_video',
-                          karaokeVideoUrl: customKaraokeInputUrl.trim(),
-                        });
-                      }
-                      setShowKaraokeModal(false);
-                    }
-                  }}
-                  className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm"
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowKaraokeModal(false)}
-              className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* POPUP FEEDBACK MODAL: Compact, Responsive on Desktop/Tablet/Mobile with English Praise */}
       {showFeedbackModal && feedback && (
