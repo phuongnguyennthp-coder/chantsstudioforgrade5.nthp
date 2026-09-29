@@ -629,11 +629,25 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
 
           {/* 2. Backing Beat Section */}
           <div className="bg-emerald-50/70 p-4 rounded-2xl border-2 border-emerald-300 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-1">
               <span className="text-xs font-black text-emerald-900 uppercase flex items-center gap-1.5">
                 <Music className="w-4 h-4 text-emerald-600" />
                 <span>2. Backing Beat (Nhạc Đệm / Beat Bài Hát):</span>
               </span>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                🎵 Tương thích Tablet & Phone
+              </span>
+            </div>
+
+            {/* Device Compatibility Tip */}
+            <div className="bg-amber-50 p-2.5 rounded-xl border border-amber-300 text-xs text-amber-900 flex items-start gap-2">
+              <span className="text-base leading-none">💡</span>
+              <div className="text-[11px] leading-tight space-y-0.5">
+                <span className="font-bold text-amber-950 block">Để học sinh nghe được Beat trên mọi thiết bị (Điện thoại, iPad/Tablet):</span>
+                <span className="text-zinc-600 block">
+                  Dán <b>Link MP3 từ Google Drive</b> hoặc <b>Dropbox</b> (chọn quyền <i>"Bất kỳ ai có đường liên kết đều có thể xem"</i>). Nếu tải file từ máy tính hoặc để trống, học sinh sẽ tự động dùng <b>Beat Nhịp Điệu Thông Minh (Smart Beat)</b> sẵn có.
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -707,6 +721,36 @@ export const TeacherStudioModal: React.FC<TeacherStudioModalProps> = ({
                   ✨ <strong>Web Audio Engine:</strong> Bóc tách luồng âm thanh/nhạc nền trực tiếp trong trình duyệt mượt mà.
                 </p>
               </div>
+            </div>
+
+            {/* Option C: Paste Online MP3 Link */}
+            <div className="bg-white p-3 rounded-xl border-2 border-emerald-200 space-y-1 shadow-sm">
+              <label className="text-[11px] font-bold text-zinc-700 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Music className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Hoặc dán Link Beat MP3 (Google Drive / Dropbox / Link web):</span>
+                </span>
+                <span className="text-[10px] text-emerald-700 font-extrabold">Chuẩn mọi thiết bị ⭐</span>
+              </label>
+              <input
+                type="url"
+                placeholder="Dán link Google Drive chứa file MP3 beat hoặc link .mp3"
+                value={beatFileUrl && !beatFileUrl.startsWith('blob:') ? beatFileUrl : ''}
+                onChange={(e) => {
+                  const val = e.target.value.trim();
+                  if (val) {
+                    setBeatFileUrl(val);
+                    setBeatFileName(`MP3 Online • ${val.substring(0, 30)}...`);
+                  } else {
+                    setBeatFileUrl(null);
+                    setBeatFileName(null);
+                  }
+                }}
+                className="w-full text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-emerald-500 bg-white font-mono"
+              />
+              <span className="text-[10px] text-zinc-400 block">
+                Hỗ trợ link Google Drive chia sẻ công khai, Dropbox (tự chuyển direct stream), hoặc link file .mp3 trực tiếp.
+              </span>
             </div>
 
             {/* Error banner */}
