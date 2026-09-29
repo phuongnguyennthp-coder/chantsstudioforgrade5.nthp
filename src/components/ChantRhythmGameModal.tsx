@@ -166,7 +166,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
             </div>
             <div className="text-left">
               <h2 className="text-lg font-black text-zinc-900">
-                Thử Thách Gõ Nhịp Phách (Rhythm Tap)
+                Chant Rhythm Tap Challenge
               </h2>
               <span className="text-xs font-bold text-pink-600 block">
                 {songTitle} • {bpm} BPM
@@ -189,16 +189,16 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
           <div className="space-y-4 py-4">
             <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-200 text-left space-y-2">
               <span className="text-xs font-black text-amber-900 uppercase block">
-                🎯 Cách Chơi Cho Học Sinh Lớp 5:
+                🎯 How to Play (Grade 5 Rhythm Mission):
               </span>
               <p className="text-xs font-bold text-zinc-700 leading-relaxed">
-                1. Nghe tiếng trống và đàn piano theo nhịp <strong>1 - 2 - 3 - 4</strong>.
+                1. Listen carefully to the drums and beats: <strong>1 - 2 - 3 - 4</strong>.
               </p>
               <p className="text-xs font-bold text-zinc-700 leading-relaxed">
-                2. Chạm vào nút <strong>"GÕ PHÁCH NHỊP"</strong> hoặc nhấn phím <strong>SPACE</strong> đúng lúc vòng tròn nhịp phồng lên!
+                2. Tap the big button <strong>"TAP THE BEAT!"</strong> or press <strong>SPACEBAR</strong> right when the beat circle expands!
               </p>
               <p className="text-xs font-bold text-zinc-700 leading-relaxed">
-                3. Gõ càng chuẩn phách, combo càng cao và RoboBuddy sẽ thưởng càng nhiều sao!
+                3. The more accurate your timing, the higher your combo and star rewards!
               </p>
             </div>
 
@@ -207,7 +207,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-lg shadow-xl shadow-green-300 flex items-center justify-center gap-2 cursor-pointer transition transform active:scale-95"
             >
               <Play className="w-5 h-5 fill-current" />
-              <span>Bắt Đầu Gõ Nhịp! 🚀</span>
+              <span>Start Rhythm Game! 🚀</span>
             </button>
           </div>
         ) : isPlaying ? (
@@ -216,13 +216,13 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
             {/* Score & Combo Bar */}
             <div className="flex items-center justify-between bg-zinc-50 p-3 rounded-2xl border border-zinc-200">
               <div className="text-left">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase block">Điểm số</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase block">Score</span>
                 <span className="text-2xl font-black text-pink-600 font-mono">{score}</span>
               </div>
               <div className="text-center">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase block">Tiến độ</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase block">Progress</span>
                 <span className="text-xs font-black text-zinc-800">
-                  {targetBeatNumberRef.current} / {totalBeatsTarget} phách
+                  {targetBeatNumberRef.current} / {totalBeatsTarget} beats
                 </span>
               </div>
               <div className="text-right">
@@ -235,7 +235,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
 
             {/* Current Lyric Prompt */}
             <div className="bg-pink-50 p-2.5 rounded-xl border border-pink-200">
-              <span className="text-[10px] font-bold text-pink-700 uppercase block">Lời Chant:</span>
+              <span className="text-[10px] font-bold text-pink-700 uppercase block">Chant Lyric:</span>
               <p className="text-sm font-black text-zinc-800 truncate">"{currentLyricLine}"</p>
             </div>
 
@@ -262,7 +262,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
                   {hitFeedback}
                 </span>
               ) : (
-                <span className="text-xs font-bold text-zinc-400">Gõ đúng phách 1, 2, 3, 4</span>
+                <span className="text-xs font-bold text-zinc-400">Tap in time on beats 1, 2, 3, 4</span>
               )}
             </div>
 
@@ -271,8 +271,8 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
               onClick={handleTap}
               className="w-full py-8 rounded-3xl bg-gradient-to-tr from-pink-500 via-rose-500 to-yellow-400 hover:from-pink-400 hover:to-yellow-300 text-white font-black text-2xl tracking-wider shadow-2xl shadow-pink-300 cursor-pointer transition transform active:scale-90 select-none flex flex-col items-center justify-center gap-1"
             >
-              <span>GÕ PHÁCH NHỊP! 🥁</span>
-              <span className="text-xs font-bold text-white/90">(Hoặc nhấn phím SPACE)</span>
+              <span>TAP THE BEAT! 🥁</span>
+              <span className="text-xs font-bold text-white/90">(Or press SPACEBAR)</span>
             </button>
           </div>
         ) : (
@@ -283,17 +283,17 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
             </div>
 
             <div>
-              <span className="text-xs font-bold text-zinc-500 uppercase">Hoàn thành thử thách!</span>
+              <span className="text-xs font-bold text-zinc-500 uppercase">Challenge Complete!</span>
               <h3 className="text-2xl font-black text-zinc-900 mt-1">
                 {score >= 1200
-                  ? '🌟 XUẤT SẮC! BẬC THẦY NHỊP PHÁCH!'
-                  : '👏 LÀM TỐT LẮM! BẮT NHỊP RẤT CHUẨN!'}
+                  ? '🌟 OUTSTANDING! RHYTHM BEAT MASTER!'
+                  : '👏 GREAT JOB! EXCELLENT RHYTHM TIMING!'}
               </h3>
             </div>
 
             <div className="grid grid-cols-3 gap-2 bg-pink-50 p-4 rounded-2xl border border-pink-200 text-center">
               <div>
-                <span className="text-[10px] font-bold text-zinc-500 block">Tổng điểm</span>
+                <span className="text-[10px] font-bold text-zinc-500 block">Total Score</span>
                 <span className="text-xl font-black text-pink-600">{score}</span>
               </div>
               <div>
@@ -301,7 +301,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
                 <span className="text-xl font-black text-amber-500">{maxCombo}x</span>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-zinc-500 block">Độ chuẩn xác</span>
+                <span className="text-[10px] font-bold text-zinc-500 block">Accuracy</span>
                 <span className="text-xl font-black text-emerald-600">
                   {totalHits > 0 ? Math.round((perfectHits / totalHits) * 100) : 0}%
                 </span>
@@ -314,7 +314,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
                 className="flex-1 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-black text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Chơi Lại</span>
+                <span>Play Again</span>
               </button>
 
               <button
@@ -324,7 +324,7 @@ export const ChantRhythmGameModal: React.FC<ChantRhythmGameModalProps> = ({
                 }}
                 className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-xl font-black text-xs transition cursor-pointer shadow-md flex items-center justify-center gap-1.5"
               >
-                <span>Thu Âm Vào Micro Ngay! 🎙️</span>
+                <span>Record Voice in Mic! 🎙️</span>
               </button>
             </div>
           </div>
