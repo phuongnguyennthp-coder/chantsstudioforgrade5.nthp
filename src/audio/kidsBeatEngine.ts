@@ -287,82 +287,228 @@ export class KidsBeatEngine {
     this.animId = requestAnimationFrame(this.runBeatLoop);
   };
 
+  // Helper synthesizer voices for punchy elementary chant drums
+  private playKick(time: number, startFreq = 220, endFreq = 42, gainVal = 0.65, duration = 0.22) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startFreq, time);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, time + duration * 0.75);
+
+      gain.gain.setValueAtTime(gainVal, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(time);
+      osc.stop(time + duration + 0.02);
+    } catch {}
+  }
+
+  private playSnare(time: number, filterFreq = 1600, gainVal = 0.42, duration = 0.14) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      const bufSize = Math.floor(this.ctx.sampleRate * duration);
+      const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(filterFreq, time);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(gainVal, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      // Add a resonant body tone to snare
+      const bodyOsc = this.ctx.createOscillator();
+      const bodyGain = this.ctx.createGain();
+      bodyOsc.frequency.setValueAtTime(190, time);
+      bodyOsc.frequency.exponentialRampToValueAtTime(80, time + 0.08);
+      bodyGain.gain.setValueAtTime(gainVal * 0.6, time);
+      bodyGain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+
+      bodyOsc.connect(bodyGain);
+      bodyGain.connect(this.masterGain);
+
+      noise.start(time);
+      noise.stop(time + duration);
+      bodyOsc.start(time);
+      bodyOsc.stop(time + 0.09);
+    } catch {}
+  }
+
+  private playClap(time: number, gainVal = 0.45) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      // Layered double-clap simulating kids clapping together
+      [0, 0.022].forEach((offset) => {
+        const t = time + offset;
+        const bufSize = Math.floor(this.ctx!.sampleRate * 0.1);
+        const buf = this.ctx!.createBuffer(1, bufSize, this.ctx!.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const src = this.ctx!.createBufferSource();
+        src.buffer = buf;
+        const flt = this.ctx!.createBiquadFilter();
+        flt.type = 'bandpass';
+        flt.frequency.setValueAtTime(1400, t);
+        flt.Q.setValueAtTime(2, t);
+
+        const gain = this.ctx!.createGain();
+        gain.gain.setValueAtTime(gainVal, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+
+        src.connect(flt);
+        flt.connect(gain);
+        gain.connect(this.masterGain!);
+        src.start(t);
+        src.stop(t + 0.1);
+      });
+    } catch {}
+  }
+
+  private playHiHat(time: number, gainVal = 0.15, isOpen = false) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      const dur = isOpen ? 0.12 : 0.035;
+      const bufSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(7800, time);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(gainVal, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      source.start(time);
+      source.stop(time + dur + 0.01);
+    } catch {}
+  }
+
+  private playShaker(time: number, gainVal = 0.12) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      const dur = 0.04;
+      const bufSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const src = this.ctx.createBufferSource();
+      src.buffer = buffer;
+      const flt = this.ctx.createBiquadFilter();
+      flt.type = 'bandpass';
+      flt.frequency.setValueAtTime(6200, time);
+      flt.Q.setValueAtTime(1.8, time);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(gainVal, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+      src.connect(flt);
+      flt.connect(gain);
+      gain.connect(this.masterGain);
+      src.start(time);
+      src.stop(time + dur + 0.01);
+    } catch {}
+  }
+
+  private playBass(time: number, freq: number, gainVal = 0.22, duration = 0.26) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, time);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, time);
+      filter.frequency.exponentialRampToValueAtTime(150, time + duration);
+
+      gain.gain.setValueAtTime(gainVal, time);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(time);
+      osc.stop(time + duration + 0.02);
+    } catch {}
+  }
+
+  private playChords(time: number, freqs: number[], gainVal = 0.08, duration = 0.3) {
+    if (!this.ctx || !this.masterGain) return;
+    try {
+      freqs.forEach((f) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, time);
+        gain.gain.setValueAtTime(0.001, time);
+        gain.gain.linearRampToValueAtTime(gainVal, time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain!);
+        osc.start(time);
+        osc.stop(time + duration + 0.02);
+      });
+    } catch {}
+  }
+
   private playBeatSound(beatNumber: number) {
     if (!this.ctx || !this.masterGain) return;
     const now = this.ctx.currentTime;
+    const halfBeat = 60 / this.bpm / 2;
 
     switch (this.beatStyle) {
       case 'hiphop_kids': {
-        // Deep punchy Sub 808 Kick on beat 1 & 3
+        // Deep punchy 808 Kick on beat 1 & 3
         if (beatNumber === 1 || beatNumber === 3) {
-          const kickOsc = this.ctx.createOscillator();
-          const kickGain = this.ctx.createGain();
-          kickOsc.frequency.setValueAtTime(180, now);
-          kickOsc.frequency.exponentialRampToValueAtTime(38, now + 0.22);
-          kickGain.gain.setValueAtTime(0.48, now);
-          kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-          kickOsc.connect(kickGain);
-          kickGain.connect(this.masterGain);
-          kickOsc.start(now);
-          kickOsc.stop(now + 0.26);
+          this.playKick(now, 240, 36, 0.75, 0.28);
+        }
+        // Ghost bounce kick on the "&" of beat 3
+        if (beatNumber === 3) {
+          this.playKick(now + halfBeat, 140, 38, 0.38, 0.16);
         }
 
         // Crisp snappy Rimshot / Snare on beat 2 & 4
         if (beatNumber === 2 || beatNumber === 4) {
-          const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
-          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-          const output = noiseBuffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-          const whiteNoise = this.ctx.createBufferSource();
-          whiteNoise.buffer = noiseBuffer;
-          const filter = this.ctx.createBiquadFilter();
-          filter.type = 'highpass';
-          filter.frequency.setValueAtTime(1800, now);
-          const snareGain = this.ctx.createGain();
-          snareGain.gain.setValueAtTime(0.35, now);
-          snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-          whiteNoise.connect(filter);
-          filter.connect(snareGain);
-          snareGain.connect(this.masterGain);
-          whiteNoise.start(now);
-          whiteNoise.stop(now + 0.1);
+          this.playSnare(now, 1900, 0.48, 0.12);
+          this.playClap(now, 0.3);
         }
 
-        // Rhythmic Hi-Hat tick on all beats
-        const hatBufferSize = Math.floor(this.ctx.sampleRate * 0.035);
-        const hatBuffer = this.ctx.createBuffer(1, hatBufferSize, this.ctx.sampleRate);
-        const hatOut = hatBuffer.getChannelData(0);
-        for (let i = 0; i < hatBufferSize; i++) hatOut[i] = Math.random() * 2 - 1;
-        const hatSource = this.ctx.createBufferSource();
-        hatSource.buffer = hatBuffer;
-        const hatFilter = this.ctx.createBiquadFilter();
-        hatFilter.type = 'highpass';
-        hatFilter.frequency.setValueAtTime(7500, now);
-        const hatGain = this.ctx.createGain();
-        hatGain.gain.setValueAtTime(0.12, now);
-        hatGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-        hatSource.connect(hatFilter);
-        hatFilter.connect(hatGain);
-        hatGain.connect(this.masterGain);
-        hatSource.start(now);
-        hatSource.stop(now + 0.04);
+        // Hi-Hat groove on all 8th notes (onbeat & offbeat)
+        this.playHiHat(now, 0.18, false);
+        this.playHiHat(now + halfBeat, 0.14, false);
 
-        // Funky Kids Bass Tone
-        const bassFreqs = [65.4, 73.4, 82.4, 98.0]; // C2, D2, E2, G2
-        const bassOsc = this.ctx.createOscillator();
-        const bassGain = this.ctx.createGain();
-        bassOsc.type = 'sawtooth';
-        bassOsc.frequency.setValueAtTime(bassFreqs[(beatNumber - 1) % bassFreqs.length], now);
-        const bassFilter = this.ctx.createBiquadFilter();
-        bassFilter.type = 'lowpass';
-        bassFilter.frequency.setValueAtTime(320, now);
-        bassGain.gain.setValueAtTime(0.2, now);
-        bassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-        bassOsc.connect(bassFilter);
-        bassFilter.connect(bassGain);
-        bassGain.connect(this.masterGain);
-        bassOsc.start(now);
-        bassOsc.stop(now + 0.3);
+        // Bouncy Hip-hop Bassline (C2, Eb2, F2, G2)
+        const hiphopBassNotes = [65.41, 77.78, 87.31, 98.0];
+        const bassNote = hiphopBassNotes[(beatNumber - 1) % hiphopBassNotes.length];
+        this.playBass(now, bassNote, 0.28, 0.32);
         break;
       }
 
@@ -371,174 +517,90 @@ export class KidsBeatEngine {
         const clickOsc = this.ctx.createOscillator();
         const clickGain = this.ctx.createGain();
         clickOsc.type = 'triangle';
-        clickOsc.frequency.setValueAtTime(beatNumber === 1 ? 820 : 640, now);
-        clickOsc.frequency.exponentialRampToValueAtTime(120, now + 0.06);
-        clickGain.gain.setValueAtTime(0.32, now);
-        clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        clickOsc.frequency.setValueAtTime(beatNumber === 1 ? 880 : 660, now);
+        clickOsc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
+        clickGain.gain.setValueAtTime(0.35, now);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
         clickOsc.connect(clickGain);
         clickGain.connect(this.masterGain);
         clickOsc.start(now);
-        clickOsc.stop(now + 0.08);
+        clickOsc.stop(now + 0.07);
 
-        // Double-Handclap on beat 2 & 4
-        if (beatNumber === 2 || beatNumber === 4) {
-          [0, 0.025].forEach((offset) => {
-            const bufSize = Math.floor(this.ctx!.sampleRate * 0.09);
-            const buf = this.ctx!.createBuffer(1, bufSize, this.ctx!.sampleRate);
-            const data = buf.getChannelData(0);
-            for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-            const src = this.ctx!.createBufferSource();
-            src.buffer = buf;
-            const flt = this.ctx!.createBiquadFilter();
-            flt.type = 'bandpass';
-            flt.frequency.setValueAtTime(1400, now + offset);
-            const clpGain = this.ctx!.createGain();
-            clpGain.gain.setValueAtTime(0.3, now + offset);
-            clpGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.08);
-            src.connect(flt);
-            flt.connect(clpGain);
-            clpGain.connect(this.masterGain!);
-            src.start(now + offset);
-            src.stop(now + offset + 0.09);
-          });
-        }
-
-        // Brass fanfare stab on beat 1 & 3
+        // Bass drum stomp on 1 & 3
         if (beatNumber === 1 || beatNumber === 3) {
-          [261.63, 392.0].forEach((freq) => {
-            const brassOsc = this.ctx!.createOscillator();
-            const brassGain = this.ctx!.createGain();
-            brassOsc.type = 'sawtooth';
-            brassOsc.frequency.setValueAtTime(freq, now);
-            brassGain.gain.setValueAtTime(0.12, now);
-            brassGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-            brassOsc.connect(brassGain);
-            brassGain.connect(this.masterGain!);
-            brassOsc.start(now);
-            brassOsc.stop(now + 0.24);
-          });
+          this.playKick(now, 170, 38, 0.68, 0.22);
+          // Fanfare brass stabs
+          this.playChords(now, [261.63, 392.0, 523.25], 0.14, 0.24);
         }
+
+        // Realistic double-clap on beat 2 & 4
+        if (beatNumber === 2 || beatNumber === 4) {
+          this.playClap(now, 0.55);
+          this.playSnare(now, 1500, 0.35, 0.1);
+        }
+
+        // Offbeat shaker
+        this.playShaker(now + halfBeat, 0.14);
         break;
       }
 
       case 'rocking': {
-        // Rock Drum Kick on 1 & 3
-        const kickOsc = this.ctx.createOscillator();
-        const kickGain = this.ctx.createGain();
-        kickOsc.frequency.setValueAtTime(200, now);
-        kickOsc.frequency.exponentialRampToValueAtTime(40, now + 0.16);
-        kickGain.gain.setValueAtTime(0.45, now);
-        kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-        kickOsc.connect(kickGain);
-        kickGain.connect(this.masterGain);
-        kickOsc.start(now);
-        kickOsc.stop(now + 0.2);
-
-        // Loud Rock Snare on 2 & 4
-        if (beatNumber === 2 || beatNumber === 4) {
-          const bufSize = Math.floor(this.ctx.sampleRate * 0.14);
-          const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
-          const data = buf.getChannelData(0);
-          for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-          const src = this.ctx.createBufferSource();
-          src.buffer = buf;
-          const flt = this.ctx.createBiquadFilter();
-          flt.type = 'bandpass';
-          flt.frequency.setValueAtTime(1050, now);
-          const snareGain = this.ctx.createGain();
-          snareGain.gain.setValueAtTime(0.35, now);
-          snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
-          src.connect(flt);
-          flt.connect(snareGain);
-          snareGain.connect(this.masterGain);
-          src.start(now);
-          src.stop(now + 0.15);
+        // Heavy Rock Kick on 1 & 3
+        if (beatNumber === 1 || beatNumber === 3) {
+          this.playKick(now, 220, 42, 0.72, 0.22);
         }
 
-        // Power Fifth Chord Stabs (C, G, A, F)
-        const powerRoots = [261.63, 329.63, 220.0, 349.23];
-        const root = powerRoots[(beatNumber - 1) % powerRoots.length];
-        [root, root * 1.5].forEach((freq) => {
-          const osc = this.ctx!.createOscillator();
-          const gain = this.ctx!.createGain();
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(freq, now);
-          gain.gain.setValueAtTime(0.08, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-          osc.connect(gain);
-          gain.connect(this.masterGain!);
-          osc.start(now);
-          osc.stop(now + 0.3);
-        });
+        // Powerful Rock Snare on 2 & 4
+        if (beatNumber === 2 || beatNumber === 4) {
+          this.playSnare(now, 1200, 0.52, 0.16);
+        }
+
+        // Rock Hi-Hat: closed on beat, open sizzle on offbeat
+        this.playHiHat(now, 0.18, false);
+        this.playHiHat(now + halfBeat, 0.15, beatNumber === 2 || beatNumber === 4);
+
+        // Power 5th Chords (C5, G5, A5, F5)
+        const rockRoots = [261.63, 392.0, 220.0, 349.23];
+        const root = rockRoots[(beatNumber - 1) % rockRoots.length];
+        this.playChords(now, [root, root * 1.5], 0.12, 0.28);
+        this.playBass(now, root / 2, 0.25, 0.26);
         break;
       }
 
       case 'pop_chant':
       default: {
-        // Standard Joyful Pop Chant Drum Kick on 1 & 3
+        // Joyful, punchy Pop Chant Kick on 1 & 3
         if (beatNumber === 1 || beatNumber === 3) {
-          const kickOsc = this.ctx.createOscillator();
-          const kickGain = this.ctx.createGain();
-          kickOsc.frequency.setValueAtTime(160, now);
-          kickOsc.frequency.exponentialRampToValueAtTime(45, now + 0.15);
-          kickGain.gain.setValueAtTime(0.4, now);
-          kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-          kickOsc.connect(kickGain);
-          kickGain.connect(this.masterGain);
-          kickOsc.start(now);
-          kickOsc.stop(now + 0.2);
+          this.playKick(now, 200, 45, 0.65, 0.2);
         }
 
-        // Handclap / Snare on beat 2 & 4
+        // Crisp Handclap & Snare on 2 & 4
         if (beatNumber === 2 || beatNumber === 4) {
-          const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
-          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-          const output = noiseBuffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
-          const whiteNoise = this.ctx.createBufferSource();
-          whiteNoise.buffer = noiseBuffer;
-          const filter = this.ctx.createBiquadFilter();
-          filter.type = 'bandpass';
-          filter.frequency.setValueAtTime(1200, now);
-          filter.Q.setValueAtTime(1.5, now);
-          const snareGain = this.ctx.createGain();
-          snareGain.gain.setValueAtTime(0.28, now);
-          snareGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-          whiteNoise.connect(filter);
-          filter.connect(snareGain);
-          snareGain.connect(this.masterGain);
-          whiteNoise.start(now);
-          whiteNoise.stop(now + 0.13);
+          this.playClap(now, 0.48);
+          this.playSnare(now, 1400, 0.38, 0.12);
         }
 
-        // Melodic Toy Piano chord progression
-        const chordFrequencies = [
-          [261.63, 329.63, 392.0], // C major
-          [329.63, 392.0, 523.25], // E minor / G
-          [220.0, 261.63, 329.63], // A minor
-          [174.61, 220.0, 261.63], // F major
+        // Energetic 8th-note shaker on every offbeat
+        this.playShaker(now + halfBeat, 0.15);
+        this.playHiHat(now, 0.12, false);
+
+        // Cheerful toy piano synth chords (C, Em, Am, F)
+        const popChords = [
+          [261.63, 329.63, 392.0],  // C
+          [329.63, 392.0, 493.88],  // Em
+          [220.0, 261.63, 329.63],  // Am
+          [174.61, 220.0, 261.63],  // F
         ];
-        const notes = chordFrequencies[(beatNumber - 1) % chordFrequencies.length];
-        notes.forEach((freq, idx) => {
-          const osc = this.ctx!.createOscillator();
-          const gain = this.ctx!.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq * (idx === 0 ? 1 : 1.5), now);
-          gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.09, now + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-          osc.connect(gain);
-          gain.connect(this.masterGain!);
-          osc.start(now);
-          osc.stop(now + 0.38);
-        });
+        const chord = popChords[(beatNumber - 1) % popChords.length];
+        this.playChords(now, chord, 0.1, 0.32);
+        this.playBass(now, chord[0] / 2, 0.22, 0.24);
         break;
       }
     }
   }
 
   // --- Real Microphone Voice Recording ---
-  public async startRecording(): Promise<boolean> {
+  public async startRecording(withBeat: boolean = false): Promise<boolean> {
     try {
       this.initContext();
       if (this.ctx && this.ctx.state === 'suspended') {
@@ -566,18 +628,24 @@ export class KidsBeatEngine {
       };
 
       this.mediaRecorder.onstop = () => {
-        this.recordedAudioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
-        if (this.recordedAudioUrl) {
-          URL.revokeObjectURL(this.recordedAudioUrl);
+        try {
+          this.recordedAudioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+          if (this.recordedAudioUrl) {
+            URL.revokeObjectURL(this.recordedAudioUrl);
+          }
+          this.recordedAudioUrl = URL.createObjectURL(this.recordedAudioBlob);
+        } catch (e) {
+          console.warn('Error creating audio blob:', e);
         }
-        this.recordedAudioUrl = URL.createObjectURL(this.recordedAudioBlob);
       };
 
       this.mediaRecorder.start();
       this.isRecording = true;
 
-      // Start the backing track beat simultaneously so the student sings with the rhythm!
-      this.startBeat();
+      // ONLY start the backing beat if explicitly requested (e.g. for Challenge Beat)
+      if (withBeat) {
+        this.startBeat();
+      }
       return true;
     } catch (err) {
       console.warn('Microphone error:', err);
@@ -598,21 +666,46 @@ export class KidsBeatEngine {
     return Math.min(100, Math.round((avg / 128) * 100));
   }
 
-  public stopRecording(): string | null {
-    if (this.mediaRecorder && this.isRecording) {
-      this.mediaRecorder.stop();
-      this.isRecording = false;
-    }
-    if (this.micStream) {
-      this.micStream.getTracks().forEach((track) => track.stop());
-      this.micStream = null;
-    }
-    if (this.micSource) {
-      this.micSource.disconnect();
-      this.micSource = null;
-    }
-    this.stopBeat();
-    return this.recordedAudioUrl;
+  public async stopRecording(): Promise<string | null> {
+    return new Promise((resolve) => {
+      if (this.mediaRecorder && this.isRecording) {
+        this.mediaRecorder.onstop = () => {
+          try {
+            this.recordedAudioBlob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+            if (this.recordedAudioUrl) {
+              URL.revokeObjectURL(this.recordedAudioUrl);
+            }
+            this.recordedAudioUrl = URL.createObjectURL(this.recordedAudioBlob);
+          } catch (e) {
+            console.warn('Error creating audio blob:', e);
+          }
+          resolve(this.recordedAudioUrl);
+        };
+        try {
+          this.mediaRecorder.stop();
+        } catch (e) {
+          console.warn('Error stopping mediaRecorder:', e);
+          resolve(this.recordedAudioUrl);
+        }
+        this.isRecording = false;
+      } else {
+        resolve(this.recordedAudioUrl);
+      }
+
+      if (this.micStream) {
+        try {
+          this.micStream.getTracks().forEach((track) => track.stop());
+        } catch {}
+        this.micStream = null;
+      }
+      if (this.micSource) {
+        try {
+          this.micSource.disconnect();
+        } catch {}
+        this.micSource = null;
+      }
+      this.stopBeat();
+    });
   }
 
   public playStudentRecording(onEnded?: () => void) {
