@@ -13,12 +13,12 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
   isMandatory = false,
 }) => {
   const [apiKey, setApiKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-3-flash-preview');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash');
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key') || '';
-    const savedModel = localStorage.getItem('gemini_model') || 'gemini-3-flash-preview';
+    const savedModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
     setApiKey(savedKey);
     setSelectedModel(savedModel);
   }, [isOpen]);
@@ -38,22 +38,28 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
 
   const models = [
     {
-      id: 'gemini-3-flash-preview',
-      name: 'Gemini 3 Flash Preview',
-      badge: 'Default / Nhanh nhất',
-      desc: 'Phù hợp nhất cho đánh giá học sinh thời gian thực và phản hồi nhanh chóng.',
+      id: 'gemini-2.0-flash',
+      name: 'Gemini 2.0 Flash',
+      badge: 'Latest • Ultra Fast',
+      desc: 'Google next-gen model, optimized for fast feedback and real-time chant scoring.',
     },
     {
-      id: 'gemini-3-pro-preview',
-      name: 'Gemini 3 Pro Preview',
-      badge: 'Chính xác cao',
-      desc: 'Mô hình phân tích sư phạm âm nhạc chuyên sâu và nhận xét chi tiết.',
+      id: 'gemini-1.5-flash',
+      name: 'Gemini 1.5 Flash',
+      badge: 'Super Stable',
+      desc: 'Standard Google AI Studio model with high reliability and generous quotas.',
     },
     {
-      id: 'gemini-2.5-flash',
-      name: 'Gemini 2.5 Flash',
-      badge: 'Ổn định',
-      desc: 'Mô hình dự phòng ổn định, tối ưu chi phí và tốc độ phản hồi.',
+      id: 'gemini-2.0-flash-lite',
+      name: 'Gemini 2.0 Flash Lite',
+      badge: 'Quota Efficient',
+      desc: 'Lightweight model with quick responses and minimal quota consumption.',
+    },
+    {
+      id: 'gemini-3.8-flash',
+      name: 'Gemini 3.8 Flash',
+      badge: 'Google Recommended',
+      desc: 'New model directly recommended in Google Gemini documentation.',
     },
   ];
 
@@ -68,10 +74,10 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
             </div>
             <div>
               <h2 className="text-lg font-black text-zinc-900">
-                Cài Đặt Gemini API Key & Model
+                Gemini API Key & Model Settings
               </h2>
               <span className="text-xs text-rose-600 font-bold block">
-                Lấy API key để sử dụng app
+                Connect your API key for AI feedback
               </span>
             </div>
           </div>
@@ -85,8 +91,8 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
 
         {/* Guide Link */}
         <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 text-xs text-amber-950 leading-relaxed">
-          <span className="font-black block mb-1">🔑 Hướng dẫn lấy API Key miễn phí:</span>
-          Truy cập Google AI Studio để tạo hoặc lấy API key:
+          <span className="font-black block mb-1">🔑 Free API Key Guide:</span>
+          Visit Google AI Studio to generate or view your free API key:
           <a
             href="https://aistudio.google.com/api-keys"
             target="_blank"
@@ -112,14 +118,14 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
               className="w-full text-xs font-mono font-medium p-3 rounded-xl border-2 border-zinc-200 focus:border-pink-500 outline-none bg-zinc-50"
             />
             <span className="text-[10px] text-zinc-400 block mt-1">
-              API key được lưu an toàn trực tiếp trên trình duyệt (localStorage) của bạn.
+              Your API key is stored securely in your browser's local storage (localStorage).
             </span>
           </div>
 
           {/* Model Selection Cards */}
           <div>
             <label className="text-xs font-black text-zinc-700 block mb-2">
-              Chọn Model AI:
+              Select AI Model:
             </label>
             <div className="space-y-2">
               {models.map((m) => (
@@ -164,12 +170,12 @@ export const ApiKeySettingsModal: React.FC<ApiKeySettingsModalProps> = ({
               {isSaved ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Đã Lưu Cài Đặt!</span>
+                  <span>Settings Saved!</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>Lưu Cài Đặt API Key</span>
+                  <span>Save API Key Settings</span>
                 </>
               )}
             </button>
