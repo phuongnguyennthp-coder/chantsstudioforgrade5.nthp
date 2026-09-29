@@ -120,9 +120,13 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   onOpenApiKeyModal,
   isStudentMode = false,
 }) => {
-  // Step 1: Video State & Custom Video Upload/URL
+  // Step 1: Dual Video State - 'original' (Chant Video) or 'karaoke' (Karaoke Video with lyrics)
+  const [activeVideoTab, setActiveVideoTab] = useState<'original' | 'karaoke'>('original');
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(lesson.videoUrl || '');
+  const [activeKaraokeUrl, setActiveKaraokeUrl] = useState<string>(lesson.karaokeVideoUrl || '');
+  const [videoTargetToEdit, setVideoTargetToEdit] = useState<'original' | 'karaoke'>('original');
   const [videoFileName, setVideoFileName] = useState<string | null>(null);
+  const [karaokeFileName, setKaraokeFileName] = useState<string | null>(null);
   const [showVideoInputModal, setShowVideoInputModal] = useState(false);
   const [customVideoInputUrl, setCustomVideoInputUrl] = useState('');
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -133,7 +137,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   // Floating Mini-Video (Sticky Picture-in-Picture) & Fullscreen State
   const mainVideoSectionRef = useRef<HTMLDivElement | null>(null);
   const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
-  const [isFloatingVideoVisible, setIsFloatingVideoVisible] = useState(true);
+  const [isFloatingVideoVisible, setIsFloatingVideoVisible] = useState(false);
   const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -246,7 +250,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   // Sync state when active lesson changes
   useEffect(() => {
     setActiveVideoUrl(lesson.videoUrl || '');
+    setActiveKaraokeUrl(lesson.karaokeVideoUrl || '');
+    setActiveVideoTab(lesson.karaokeVideoUrl && !lesson.videoUrl ? 'karaoke' : 'original');
     setVideoFileName(null);
+    setKaraokeFileName(null);
     setCurrentBpm(lesson.bpm || 90);
     setBeatFileName(null);
     setVideoRecordedUrl(null);
@@ -258,7 +265,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setVideoMissionScore(null);
     setChallengeMissionScore(null);
     setEvaluatedMissionMode(null);
-    setPracticeMode(lesson.videoUrl ? 'video_beat' : 'pure_beat');
+    setPracticeMode(lesson.videoUrl || lesson.karaokeVideoUrl ? 'video_beat' : 'pure_beat');
     setCustomVideoInputUrl('');
     setVideoError(false);
     setKaraokeVideoError(false);
@@ -330,17 +337,44 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       const blobUrl = URL.createObjectURL(file);
-      setActiveVideoUrl(blobUrl);
-      setVideoFileName(file.name);
+      if (videoTargetToEdit === 'karaoke') {
+        setActiveKaraokeUrl(blobUrl);
+        setKaraokeFileName(file.name);
+        setActiveVideoTab('karaoke');
+        if (onUpdateLesson) {
+          onUpdateLesson({ ...lesson, karaokeVideoUrl: blobUrl });
+        }
+      } else {
+        setActiveVideoUrl(blobUrl);
+        setVideoFileName(file.name);
+        setActiveVideoTab('original');
+        if (onUpdateLesson) {
+          onUpdateLesson({ ...lesson, videoUrl: blobUrl });
+        }
+      }
       setShowVideoInputModal(false);
     }
   };
 
   // Direct video link submit
   const handleApplyCustomVideoUrl = () => {
-    if (customVideoInputUrl.trim()) {
-      setActiveVideoUrl(customVideoInputUrl.trim());
-      setVideoFileName(null);
+    const trimmed = customVideoInputUrl.trim();
+    if (trimmed) {
+      if (videoTargetToEdit === 'karaoke') {
+        setActiveKaraokeUrl(trimmed);
+        setKaraokeFileName(null);
+        setActiveVideoTab('karaoke');
+        if (onUpdateLesson) {
+          onUpdateLesson({ ...lesson, karaokeVideoUrl: trimmed });
+        }
+      } else {
+        setActiveVideoUrl(trimmed);
+        setVideoFileName(null);
+        setActiveVideoTab('original');
+        if (onUpdateLesson) {
+          onUpdateLesson({ ...lesson, videoUrl: trimmed });
+        }
+      }
       setShowVideoInputModal(false);
       setCustomVideoInputUrl('');
     }
@@ -842,9 +876,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     animate();
   };
 
+  // Active Video URL dynamically selected based on tab
   const effectiveVideoUrl =
-    activeVideoUrl || lesson.videoUrl || lesson.karaokeVideoUrl || '';
+    activeVideoTab === 'karaoke'
+      ? (activeKaraokeUrl || lesson.karaokeVideoUrl || activeVideoUrl || lesson.videoUrl || '')
+      : (activeVideoUrl || lesson.videoUrl || activeKaraokeUrl || lesson.karaokeVideoUrl || '');
   const youtubeEmbedUrl = getYoutubeEmbedUrl(effectiveVideoUrl);
+  const currentVideoFileName = activeVideoTab === 'karaoke' ? karaokeFileName : videoFileName;
+  const currentVideoError = activeVideoTab === 'karaoke' ? karaokeVideoError : videoError;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -996,20 +1035,16 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 </span>
                 <div>
                   <h2 className="text-lg font-black text-emerald-800">
-                    {practiceMode === 'video_beat'
-                      ? 'Watch Chant Video 📺'
-                      : 'Chant Rhythm & Audio 🎵'}
+                    Watch & Practice Chant 📺
                   </h2>
                   <span className="text-[11px] font-bold text-zinc-500">
-                    {practiceMode === 'video_beat'
-                      ? 'Watch & Sing Along with the Video'
-                      : 'Sing Along with Rhythm Beat'}
+                    Watch chant video, follow karaoke lyrics & sing along
                   </span>
                 </div>
               </div>
 
               {/* Direct Video Upload Trigger (available ONLY in teacher mode) */}
-              {!isStudentMode && practiceMode === 'video_beat' && (
+              {!isStudentMode && (
                 <button
                   type="button"
                   onClick={() => setShowVideoInputModal(true)}
@@ -1017,9 +1052,54 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   title="Upload video from computer or paste YouTube link"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Video 🎥</span>
+                  <span>Change Videos 🎥</span>
                 </button>
               )}
+            </div>
+
+            {/* Video Selector Tabs: 📺 Chant Video vs 🎤 Karaoke Video */}
+            <div className="flex items-center justify-between flex-wrap gap-2 p-1.5 rounded-2xl bg-zinc-100/90 border border-zinc-200">
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveVideoTab('original')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                    activeVideoTab === 'original'
+                      ? 'bg-emerald-600 text-white shadow-md'
+                      : 'text-zinc-600 hover:text-emerald-700 hover:bg-white'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>📺 Chant Video</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveVideoTab('karaoke')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                    activeVideoTab === 'karaoke'
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'text-zinc-600 hover:text-purple-700 hover:bg-white'
+                  }`}
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>🎤 Karaoke Video</span>
+                  {(activeKaraokeUrl || lesson.karaokeVideoUrl) && (
+                    <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
+                  )}
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {activeVideoTab === 'karaoke' ? (
+                  <span className="text-[10px] font-black text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
+                    Lyrics on Video 🌟
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    Chant Lesson 🎬
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Video Player: Shown cleanly in Step 1 */}
@@ -1035,21 +1115,24 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
-                  ) : activeVideoUrl && (!activeVideoUrl.startsWith('blob:') || !isStudentMode) && !videoError ? (
+                  ) : effectiveVideoUrl && (!effectiveVideoUrl.startsWith('blob:') || !isStudentMode) && !currentVideoError ? (
                     // HTML5 Video Player with iOS / Android mobile optimization
                     <video
                       ref={videoRef}
-                      src={activeVideoUrl}
+                      src={effectiveVideoUrl}
                       controls
                       loop
                       playsInline
                       preload="metadata"
                       onPlay={() => setIsVideoPlaying(true)}
                       onPause={() => setIsVideoPlaying(false)}
-                      onError={() => setVideoError(true)}
+                      onError={() => {
+                        if (activeVideoTab === 'karaoke') setKaraokeVideoError(true);
+                        else setVideoError(true);
+                      }}
                       className="w-full h-full object-contain bg-black"
                     />
-                  ) : activeVideoUrl && ((activeVideoUrl.startsWith('blob:') && isStudentMode) || videoError) ? (
+                  ) : effectiveVideoUrl && ((effectiveVideoUrl.startsWith('blob:') && isStudentMode) || currentVideoError) ? (
                     // Friendly mobile fallback card when teacher uploaded a local file
                     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-500 via-rose-500 to-pink-600 p-4 sm:p-6 text-center text-white space-y-2">
                       <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-2xl shadow-inner">
@@ -1079,14 +1162,19 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 </div>
 
                 {/* Video File Name Notice if custom uploaded */}
-                {videoFileName && (
+                {currentVideoFileName && (
                   <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center justify-between">
-                    <span>📹 Playing: {videoFileName}</span>
+                    <span>📹 Playing ({activeVideoTab === 'karaoke' ? 'Karaoke Video' : 'Chant Video'}): {currentVideoFileName}</span>
                     <button
                       type="button"
                       onClick={() => {
-                        setActiveVideoUrl(lesson.videoUrl || '');
-                        setVideoFileName(null);
+                        if (activeVideoTab === 'karaoke') {
+                          setActiveKaraokeUrl(lesson.karaokeVideoUrl || '');
+                          setKaraokeFileName(null);
+                        } else {
+                          setActiveVideoUrl(lesson.videoUrl || '');
+                          setVideoFileName(null);
+                        }
                       }}
                       className="text-xs text-rose-600 hover:underline cursor-pointer"
                     >
@@ -1943,6 +2031,39 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </button>
             </div>
 
+            {/* Target Video Selector: Chant Video or Karaoke Video */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-zinc-700 block">
+                Choose Video Type to Update:
+              </label>
+              <div className="grid grid-cols-2 gap-2 bg-zinc-100 p-1.5 rounded-2xl border border-zinc-200">
+                <button
+                  type="button"
+                  onClick={() => setVideoTargetToEdit('original')}
+                  className={`py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    videoTargetToEdit === 'original'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-zinc-600 hover:text-emerald-700 hover:bg-white'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>📺 Chant Video</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoTargetToEdit('karaoke')}
+                  className={`py-2 px-3 rounded-xl text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    videoTargetToEdit === 'karaoke'
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-zinc-600 hover:text-purple-700 hover:bg-white'
+                  }`}
+                >
+                  <Mic className="w-3.5 h-3.5" />
+                  <span>🎤 Karaoke Video</span>
+                </button>
+              </div>
+            </div>
+
             {/* Option A: Upload local video file */}
             <div className="space-y-1.5">
               <label className="text-xs font-black text-zinc-700 block">
@@ -1964,12 +2085,12 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Option B: Enter video URL / YouTube link */}
             <div className="space-y-1.5 pt-2 border-t">
               <label className="text-xs font-black text-zinc-700 block">
-                Method 2: Paste YouTube / Video Link
+                Method 2: Paste YouTube / Google Drive Link
               </label>
               <div className="flex gap-2">
                 <input
                   type="url"
-                  placeholder="https://www.youtube.com/watch?v=... or .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... or Drive link"
                   value={customVideoInputUrl}
                   onChange={(e) => setCustomVideoInputUrl(e.target.value)}
                   className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-emerald-500"
@@ -1977,17 +2098,20 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <button
                   type="button"
                   onClick={handleApplyCustomVideoUrl}
-                  className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl cursor-pointer shadow-sm transition"
                 >
                   Apply
                 </button>
               </div>
+              <p className="text-[10px] text-zinc-500 italic">
+                💡 Tip: Use YouTube or Google Drive link for 100% smooth playback on students' phones & tablets!
+              </p>
             </div>
 
             <button
               type="button"
               onClick={() => setShowVideoInputModal(false)}
-              className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
+              className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer transition"
             >
               Close
             </button>
@@ -2157,14 +2281,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
       {practiceMode === 'video_beat' &&
         isFloatingVideoVisible &&
         isVideoOutOfView &&
-        (youtubeEmbedUrl || (activeVideoUrl && (!activeVideoUrl.startsWith('blob:') || !isStudentMode))) && (
+        (youtubeEmbedUrl || (effectiveVideoUrl && (!effectiveVideoUrl.startsWith('blob:') || !isStudentMode))) && (
           <div className="fixed bottom-4 right-4 z-40 animate-fade-in shadow-2xl">
             <div className="bg-white/95 backdrop-blur-md rounded-2xl border-3 border-emerald-400 p-2 text-zinc-900 shadow-2xl max-w-[300px] sm:max-w-[340px] space-y-1.5">
               {/* Mini Header Bar */}
               <div className="flex items-center justify-between gap-1.5 px-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-800 truncate">
                   <span className="animate-pulse">📺</span>
-                  <span className="truncate">Mini Chant Video</span>
+                  <span className="truncate">Mini {activeVideoTab === 'karaoke' ? 'Karaoke' : 'Chant'} Video</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {/* Scroll to main video */}
@@ -2214,9 +2338,9 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
-                  ) : activeVideoUrl ? (
+                  ) : effectiveVideoUrl ? (
                     <video
-                      src={activeVideoUrl}
+                      src={effectiveVideoUrl}
                       controls
                       loop
                       playsInline
