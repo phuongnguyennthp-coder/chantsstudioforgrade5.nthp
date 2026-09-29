@@ -198,10 +198,12 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [isRhythmGameOpen, setIsRhythmGameOpen] = useState(false);
   const [selectedBeatStyle, setSelectedBeatStyle] = useState<ChantBeatStyle>('pop_chant');
 
-  // Step 2: Microphone & Voice Recording State
-  const [isRecording, setIsRecording] = useState(false);
+  // Step 2: Microphone & Voice Recording State (Decoupled between Video Practice & Challenge Beat)
+  const [activeRecordingMode, setActiveRecordingMode] = useState<'video' | 'challenge' | null>(null);
+  const [activeCountdownMode, setActiveCountdownMode] = useState<'video' | 'challenge' | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recordedUrl, setRecordedUrl] = useState<string | null>(null);
+  const [recordedSourceMode, setRecordedSourceMode] = useState<'video' | 'challenge' | null>(null);
   const [isPlayingRecording, setIsPlayingRecording] = useState(false);
   const [recordTimerSeconds, setRecordTimerSeconds] = useState(0);
   const [liveMicLevel, setLiveMicLevel] = useState<number>(0);
@@ -248,7 +250,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setCurrentBpm(lesson.bpm || 90);
     setBeatFileName(null);
     setRecordedUrl(null);
-    setIsRecording(false);
+    setRecordedSourceMode(null);
+    setActiveRecordingMode(null);
+    setActiveCountdownMode(null);
+    setIsPlayingRecording(false);
     setIsVideoPlaying(false);
     setPracticeMode(lesson.videoUrl ? 'video_beat' : 'pure_beat');
     setLyricsChoice(
@@ -268,7 +273,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     const safeBeatUrl = isStudentMode && isLocalBlob ? null : (lesson.beatAudioUrl || null);
     kidsBeatEngine.setCustomBeatAudio(safeBeatUrl);
     if (isStudentMode && isLocalBlob) {
-      setBeatFileName('Beat Nhịp Điệu Thông Minh (Smart Beat)');
+      setBeatFileName('Smart Rhythm Beat • Beat Nhịp Điệu Thông Minh');
     } else if (lesson.beatAudioUrl) {
       setBeatFileName(`Beat • ${lesson.title}`);
     } else {
@@ -290,7 +295,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     let animId: number;
     let timerId: any;
 
-    if (isRecording) {
+    if (activeRecordingMode !== null) {
       setRecordTimerSeconds(0);
       timerId = setInterval(() => {
         setRecordTimerSeconds((prev) => prev + 1);
@@ -310,7 +315,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
       if (animId) cancelAnimationFrame(animId);
       if (timerId) clearInterval(timerId);
     };
-  }, [isRecording]);
+  }, [activeRecordingMode]);
 
   // Video play / pause toggle
   const toggleVideo = () => {
@@ -434,20 +439,24 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     kidsBeatEngine.setBeatVolume(v);
   };
 
-  // Start recording with 3-second countdown
-  const handleStartRecord = () => {
+  // Step 1: Video recording handlers (Without Challenge Beat)
+  const handleStartVideoRecord = () => {
+    if (activeRecordingMode !== null) return;
+    setActiveCountdownMode('video');
     setCountdown(3);
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev === 1) {
           clearInterval(timer);
-          kidsBeatEngine.startRecording().then((ok) => {
-            setIsRecording(ok);
-            // In video beat mode, play video in sync so student watches video while singing
-            if (practiceMode === 'video_beat' && videoRef.current) {
-              videoRef.current.currentTime = 0;
-              videoRef.current.play().catch((e) => console.log('Video sync play error', e));
-              setIsVideoPlaying(true);
+          setActiveCountdownMode(null);
+          kidsBeatEngine.startRecording(false).then((ok) => {
+            if (ok) {
+              setActiveRecordingMode('video');
+              if (practiceMode === 'video_beat' && videoRef.current) {
+                videoRef.current.currentTime = 0;
+                videoRef.current.play().catch((e) => console.log('Video sync play error', e));
+                setIsVideoPlaying(true);
+              }
             }
           });
           return null;
@@ -457,18 +466,61 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     }, 800);
   };
 
-  const handleStopRecord = () => {
-    const url = kidsBeatEngine.stopRecording();
-    setIsRecording(false);
-    setRecordedUrl(url || 'recorded-ready');
-    // Stop video playback synchronously
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setIsVideoPlaying(false);
+  const handleStopVideoRecord = async () => {
+    try {
+      const url = await kidsBeatEngine.stopRecording();
+      setActiveRecordingMode(null);
+      setRecordedUrl(url || 'recorded-ready');
+      setRecordedSourceMode('video');
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsVideoPlaying(false);
+      }
+    } catch (err) {
+      console.error('Stop video recording error:', err);
+      setActiveRecordingMode(null);
+      setRecordedUrl('recorded-ready');
+      setRecordedSourceMode('video');
     }
   };
 
-  const handlePlayRecording = () => {
+  // Step 2: Beat Challenge recording handlers (With selected Challenge Beat)
+  const handleStartChallengeRecord = () => {
+    if (activeRecordingMode !== null) return;
+    setActiveCountdownMode('challenge');
+    setCountdown(3);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === 1) {
+          clearInterval(timer);
+          setActiveCountdownMode(null);
+          kidsBeatEngine.startRecording(true).then((ok) => {
+            if (ok) {
+              setActiveRecordingMode('challenge');
+            }
+          });
+          return null;
+        }
+        return prev !== null ? prev - 1 : null;
+      });
+    }, 800);
+  };
+
+  const handleStopChallengeRecord = async () => {
+    try {
+      const url = await kidsBeatEngine.stopRecording();
+      setActiveRecordingMode(null);
+      setRecordedUrl(url || 'recorded-ready');
+      setRecordedSourceMode('challenge');
+    } catch (err) {
+      console.error('Stop challenge recording error:', err);
+      setActiveRecordingMode(null);
+      setRecordedUrl('recorded-ready');
+      setRecordedSourceMode('challenge');
+    }
+  };
+
+  const handleTogglePlayRecording = () => {
     if (isPlayingRecording) {
       kidsBeatEngine.stopStudentRecordingPlayback();
       setIsPlayingRecording(false);
@@ -480,6 +532,11 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     }
   };
 
+  // Compatibility aliases
+  const handlePlayRecording = handleTogglePlayRecording;
+  const handleStartRecord = handleStartVideoRecord;
+  const handleStopRecord = handleStopVideoRecord;
+
   // Download student's recorded singing file
   const handleDownloadRecording = () => {
     const blob = kidsBeatEngine.getRecordedAudioBlob();
@@ -487,7 +544,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${studentName.replace(/\s+/g, '_')}_${lesson.title.replace(/\s+/g, '_')}_Singing.webm`;
+    a.download = `${studentName.replace(/\s+/g, '_')}_${lesson.title.replace(/\s+/g, '_')}_Chant.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -585,6 +642,8 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     }
   };
 
+  const handleSubmitMission = handleSubmit;
+
   // Retention, Try Again & Deletion Handlers for Student Results
   const handleKeepResult = () => {
     setShowFeedbackModal(false);
@@ -599,10 +658,13 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     kidsBeatEngine.stopStudentRecordingPlayback();
     setIsPlayingRecording(false);
     setRecordedUrl(null);
+    setRecordedSourceMode(null);
+    setActiveRecordingMode(null);
+    setActiveCountdownMode(null);
     setSubmitState('idle');
     setShowFeedbackModal(false);
 
-    // 3. Scroll smoothly back to Microphone area (Step 2)
+    // 3. Scroll smoothly back to Microphone area
     setTimeout(() => {
       recordingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
@@ -695,6 +757,9 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <span className="bg-pink-100 text-pink-700 text-xs font-black uppercase px-3 py-1 rounded-full border border-pink-300">
                   chantsstudioforgrade5
                 </span>
+                <span className="bg-purple-600 text-white text-xs font-black px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1">
+                  <span>✨ Designed by Tím</span>
+                </span>
                 <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-1 rounded-full">
                   {lesson.category}
                 </span>
@@ -714,7 +779,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <Smile className="w-5 h-5 text-yellow-600" />
               <div className="text-left">
                 <span className="text-[10px] font-bold text-yellow-800 uppercase block">
-                  Học sinh (Student):
+                  Student Name • Tên học sinh:
                 </span>
                 <input
                   type="text"
@@ -731,23 +796,24 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               type="button"
               onClick={toggleFullscreen}
               className="px-3 py-2 rounded-2xl bg-white hover:bg-emerald-50 border-2 border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer shadow-sm flex items-center gap-1.5 active:scale-95"
-              title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+              title={isFullscreen ? 'Minimize • Thu nhỏ cửa sổ' : 'Fullscreen • Toàn màn hình'}
             >
               {isFullscreen ? (
                 <>
                   <Minimize className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden sm:inline">Thu nhỏ</span>
+                  <span className="hidden sm:inline">Minimize • Thu nhỏ</span>
                 </>
               ) : (
                 <>
                   <Maximize className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden sm:inline">Toàn màn hình</span>
+                  <span className="hidden sm:inline">Fullscreen • Toàn màn hình</span>
                 </>
               )}
             </button>
 
             {!isStudentMode && onOpenTeacherStudio && (
               <button
+                type="button"
                 onClick={onOpenTeacherStudio}
                 className="px-3.5 py-2 rounded-2xl bg-zinc-100 hover:bg-zinc-200 border-2 border-zinc-300 text-zinc-700 text-xs font-bold transition cursor-pointer shadow-sm flex items-center gap-1.5"
                 title="Teacher Mode to upload new video songs"
@@ -766,16 +832,16 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             <RoboBuddyMascot size="sm" mood="happy" isDancing={isBeatActive} />
           </div>
           <div className="flex-1 text-left">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-black text-xs sm:text-sm text-indigo-700">
-                🤖 RoboBuddy AI (Grade 5 Music Companion):
+                🤖 RoboBuddy AI Companion • Bạn Đồng Hành Âm Nhạc:
               </span>
               <span className="text-[10px] bg-pink-100 text-pink-700 font-bold px-2 py-0.5 rounded-full">
-                Ready to listen!
+                Ready to listen! • Sẵn sàng!
               </span>
             </div>
             <p className="text-xs text-zinc-700 font-medium mt-0.5">
-              "Hi <strong className="text-pink-600">{studentName}</strong>! 1️⃣ Xem video bài hát bên trái. 2️⃣ Nghe beat nhạc & thu âm giọng hát vào micro bên phải. 3️⃣ Bấm Nộp Bài để mình chấm điểm và tặng huy hiệu nhé!"
+              "Hi <strong className="text-pink-600">{studentName}</strong>! 1️⃣ Watch the chant video on the left (Xem video bài hát). 2️⃣ Feel the lively beat & record your voice on the right (Nghe beat & thu âm giọng hát). 3️⃣ Tap Submit to get your stars & badges from AI! (Bấm Nộp bài để nhận sao và huy hiệu nhé!)"
             </p>
           </div>
         </div>
@@ -785,7 +851,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
       <div className="flex items-center justify-center gap-2 p-2 bg-gradient-to-r from-pink-100 via-yellow-100 to-emerald-100 rounded-3xl border-3 border-pink-300 shadow-md flex-wrap">
         <span className="text-xs font-black text-zinc-700 px-2 flex items-center gap-1.5">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          <span>Chế độ thực hành cho học sinh:</span>
+          <span>Practice Mode • Chế độ thực hành:</span>
         </span>
         <button
           type="button"
@@ -797,7 +863,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
           }`}
         >
           <Video className="w-4 h-4" />
-          <span>🎬 Video có Beat nhạc</span>
+          <span>🎬 Video Chant with Beat • Video có Beat nhạc</span>
         </button>
         <button
           type="button"
@@ -809,7 +875,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
           }`}
         >
           <Music className="w-4 h-4" />
-          <span>🎵 Chỉ dùng Beat nhạc (Thuần Beat)</span>
+          <span>🎵 Pure Beat Mode • Chỉ dùng Beat nhạc</span>
         </button>
       </div>
 
@@ -827,13 +893,13 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <div>
                   <h2 className="text-lg font-black text-emerald-800">
                     {practiceMode === 'video_beat'
-                      ? 'Xem Video Bài Hát 📺'
-                      : 'Lời Bài Hát & Tiết Tấu Chants 🎵'}
+                      ? 'Watch Chant Video • Xem Video Bài Hát 📺'
+                      : 'Chant Lyrics & Rhythm • Lời Bài Hát & Tiết Tấu Chants 🎵'}
                   </h2>
                   <span className="text-[11px] font-bold text-zinc-500">
                     {practiceMode === 'video_beat'
-                      ? 'Watch & Sing Along with Video'
-                      : 'Sing Along with Rhythm (Pure Beat Mode)'}
+                      ? 'Watch & Sing Along with Video • Vừa xem vừa luyện tập theo video'
+                      : 'Sing Along with Rhythm • Luyện tập theo tiết tấu beat'}
                   </span>
                 </div>
               </div>
@@ -841,12 +907,13 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               {/* Direct Video Upload Trigger (available ONLY in teacher mode) */}
               {!isStudentMode && practiceMode === 'video_beat' && (
                 <button
+                  type="button"
                   onClick={() => setShowVideoInputModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-black border border-emerald-300 shadow-sm cursor-pointer transition"
-                  title="Tải video từ máy tính hoặc dán link YouTube"
+                  title="Upload video from computer or paste YouTube link"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Đổi / Tải Video 🎥</span>
+                  <span>Upload Video • Đổi / Tải Video 🎥</span>
                 </button>
               )}
             </div>
@@ -885,13 +952,13 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         📱
                       </div>
                       <h4 className="text-sm sm:text-base font-black tracking-wide">
-                        Video mẫu từ tệp máy tính cá nhân
+                        Local Video File • Video mẫu từ tệp máy tính cá nhân
                       </h4>
                       <p className="text-xs text-white/95 max-w-sm leading-relaxed">
-                        Tệp video này được tải từ máy tính của thầy/cô nên điện thoại hoặc tablet chưa thể tải trực tiếp qua mạng.
+                        This video file is on the teacher's local device. • Tệp video này được tải từ máy tính của thầy/cô nên điện thoại hoặc tablet chưa tải trực tiếp qua mạng.
                       </p>
                       <div className="bg-black/30 backdrop-blur-xs px-3 py-2 rounded-xl text-[11px] font-bold text-yellow-200 border border-white/20 max-w-sm">
-                        💡 Em hãy nhìn vào phần <b>Nội Dung Thực Hành</b> ở dưới, bấm Micro để tập hát và nộp bài nhé! Thầy/Cô dán <b>Link YouTube</b> hoặc <b>Google Drive</b> để video phát mượt mà trên mọi thiết bị.
+                        💡 Sing along with the practice content below and tap Mic to record! • Em hãy nhìn vào phần <b>Nội Dung Thực Hành</b> ở dưới, bấm Micro để tập hát và nộp bài nhé! (Thầy/Cô dán Link YouTube hoặc Google Drive để video phát mượt mà trên mọi thiết bị).
                       </div>
                     </div>
                   ) : (
@@ -901,7 +968,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         {lesson.title}
                       </span>
                       <span className="text-xs font-bold text-white/90">
-                        ChantsStudio for Grade 5
+                        ChantsStudio for Grade 5 • Designed by Tím
                       </span>
                     </div>
                   )}
@@ -910,15 +977,16 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 {/* Video File Name Notice if custom uploaded */}
                 {videoFileName && (
                   <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center justify-between">
-                    <span>📹 Đang phát video: {videoFileName}</span>
+                    <span>📹 Playing • Đang phát: {videoFileName}</span>
                     <button
+                      type="button"
                       onClick={() => {
                         setActiveVideoUrl(lesson.videoUrl || '');
                         setVideoFileName(null);
                       }}
                       className="text-xs text-rose-600 hover:underline cursor-pointer"
                     >
-                      Khôi phục mặc định
+                      Reset • Khôi phục mặc định
                     </button>
                   </div>
                 )}
@@ -927,10 +995,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               // Pure Beat Mode Header Banner
               <div className="bg-gradient-to-r from-emerald-100 to-teal-100 p-4 rounded-2xl border-2 border-emerald-300 text-center">
                 <span className="text-sm font-black text-emerald-900 block">
-                  🥁 Chế độ tập trung vào Nhịp điệu & Lời ca
+                  🥁 Pure Rhythm & Lyrics Mode • Chế độ tập trung vào Nhịp điệu & Lời ca
                 </span>
                 <span className="text-xs font-medium text-emerald-700 mt-1 block">
-                  Khung video đã được ẩn để em hoàn toàn hòa mình vào tiếng trống và nhịp phách!
+                  Focus entirely on the chant rhythm, drums & voice! • Khung video đã được ẩn để em hòa mình vào tiếng trống!
                 </span>
               </div>
             ) : null}
@@ -941,7 +1009,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-black text-emerald-800 uppercase tracking-wide flex items-center gap-1.5">
                     <Mic className="w-4 h-4 text-emerald-600" />
-                    <span>Nội dung thực hành:</span>
+                    <span>Practice Content • Nội dung thực hành:</span>
                   </span>
 
                   {/* 2 Choices: Text or Video Karaoke */}
@@ -956,7 +1024,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       }`}
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      <span>📝 Chọn Text</span>
+                      <span>📝 Text Lyrics • Lời Text</span>
                     </button>
                     <button
                       type="button"
@@ -968,7 +1036,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       }`}
                     >
                       <Video className="w-3.5 h-3.5" />
-                      <span>🎬 Chọn Đăng Video</span>
+                      <span>🎬 Video Chant • Đăng Video</span>
                     </button>
                   </div>
                 </div>
@@ -984,10 +1052,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       type="button"
                       onClick={() => setShowKaraokeModal(true)}
                       className="px-2.5 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 border border-purple-300 text-purple-900 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-xs"
-                      title="Tải video karaoke từ máy hoặc dán link YouTube"
+                      title="Upload video karaoke from device or paste YouTube link"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Đăng / Đổi Video 🎥</span>
+                      <span>Upload Video • Đăng Video 🎥</span>
                     </button>
                   )}
                 </div>
@@ -1022,7 +1090,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                             🎬
                           </div>
                           <h4 className="text-sm sm:text-base font-black tracking-wide">
-                            Video Karaoke từ tệp máy tính cá nhân
+                            Local Video File • Video Karaoke từ tệp máy tính cá nhân
                           </h4>
                           <p className="text-xs text-white/95 max-w-sm leading-relaxed">
                             Tệp video karaoke này được chọn từ máy tính của thầy/cô nên điện thoại hoặc tablet chưa tải được qua mạng.
@@ -1039,10 +1107,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         🎬
                       </div>
                       <h4 className="text-sm font-black text-purple-950">
-                        Chưa có Video cho bài hát này
+                        No Video Yet • Chưa có Video cho bài hát này
                       </h4>
                       <p className="text-xs text-purple-700">
-                        Tải file video từ máy tính hoặc dán link YouTube để học sinh nhìn vào thực hành!
+                        Upload video or paste YouTube link for students to practice! • Tải video hoặc dán link YouTube để học sinh thực hành!
                       </p>
                       <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
                         {!isStudentMode && (
@@ -1052,7 +1120,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                             className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black shadow-md cursor-pointer transition flex items-center gap-1.5"
                           >
                             <Upload className="w-4 h-4" />
-                            <span>Đăng Video Ngay</span>
+                            <span>Upload Video • Đăng Video Ngay</span>
                           </button>
                         )}
                         <button
@@ -1060,14 +1128,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                           onClick={() => setLyricsChoice('text')}
                           className="px-4 py-2 rounded-xl bg-white hover:bg-purple-100 text-purple-800 text-xs font-black border border-purple-200 cursor-pointer transition"
                         >
-                          📝 Xem Lời dạng Text
+                          📝 Text Lyrics • Xem Lời dạng Text
                         </button>
                       </div>
                     </div>
                   )}
                   {effectiveKaraokeUrl && (
                     <p className="text-[11px] font-bold text-center text-emerald-800">
-                      📺 Hãy nhìn vào video và bấm nút Micro màu xanh ngay bên dưới để thu âm nhé! 👇
+                      📺 Watch the video & tap the green Microphone below to record! • Hãy nhìn vào video và bấm nút Micro màu xanh bên dưới để thu âm! 👇
                     </p>
                   )}
                 </div>
@@ -1090,29 +1158,29 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-black text-emerald-950 uppercase flex items-center gap-1.5">
                     <Mic className="w-4 h-4 text-emerald-600 animate-bounce" />
-                    <span>Thu Âm Trực Tiếp Theo Video (Sing Along):</span>
+                    <span>Record with Video • Thu Âm Theo Video (Sing Along):</span>
                   </span>
                   <span className="text-[10px] font-extrabold text-emerald-800 bg-white px-2 py-0.5 rounded-full border border-emerald-300 shadow-2xs">
-                    📱 Vừa xem vừa thu âm
+                    📱 Watch & Record • Vừa xem vừa thu âm
                   </span>
                 </div>
 
-                {countdown !== null ? (
+                {activeCountdownMode === 'video' ? (
                   <div className="py-2 animate-scale-up">
                     <span className="text-4xl sm:text-5xl font-black text-emerald-600 animate-ping block">
                       {countdown}
                     </span>
                     <span className="text-xs font-bold text-zinc-700 mt-1 block">
-                      Chuẩn bị hát theo video nhé! 🎈 (Get ready!)
+                      Get ready to sing along! 🎈 (Chuẩn bị hát theo video nhé!)
                     </span>
                   </div>
-                ) : isRecording ? (
+                ) : activeRecordingMode === 'video' ? (
                   <div className="space-y-2.5 py-1 w-full animate-fade-in">
                     <div className="flex items-center justify-center gap-2 text-rose-600 font-black text-xs sm:text-sm animate-pulse">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
                       <span>
-                        Đang thu âm: {Math.floor(recordTimerSeconds / 60)}:
-                        {(recordTimerSeconds % 60).toString().padStart(2, '0')} - Hãy nhìn video và hát thật to nhé!
+                        Recording: {Math.floor(recordTimerSeconds / 60)}:
+                        {(recordTimerSeconds % 60).toString().padStart(2, '0')} • Sing loud along with video! (Hát to theo video nhé!)
                       </span>
                     </div>
 
@@ -1136,19 +1204,19 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                     {/* Stop button */}
                     <button
                       type="button"
-                      onClick={handleStopRecord}
+                      onClick={handleStopVideoRecord}
                       className="px-5 py-2 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-1.5 mx-auto cursor-pointer transition transform active:scale-95"
                     >
                       <Square className="w-3.5 h-3.5 fill-current" />
-                      <span>Dừng Thu Âm (Stop Recording)</span>
+                      <span>Stop Recording • Dừng Thu Âm</span>
                     </button>
                   </div>
-                ) : recordedUrl ? (
+                ) : recordedUrl && (recordedSourceMode === 'video' || recordedSourceMode === null) ? (
                   /* Recording Completed Station: Playback & Submit right here! */
                   <div className="w-full space-y-2 pt-0.5 animate-scale-up">
                     <div className="flex items-center justify-center gap-1.5 text-xs font-black text-emerald-800">
                       <CheckCircle className="w-4 h-4 text-emerald-600" />
-                      <span>Đã thu âm xong giọng hát! Em có thể nghe lại hoặc nộp bài ngay:</span>
+                      <span>Recording ready! Listen or submit: • Đã thu âm xong giọng hát!</span>
                     </div>
 
                     <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -1163,35 +1231,35 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         }`}
                       >
                         {isPlayingRecording ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                        <span>{isPlayingRecording ? 'Tạm dừng' : 'Nghe lại giọng em'}</span>
+                        <span>{isPlayingRecording ? 'Pause • Tạm dừng' : 'Play Voice • Nghe lại giọng em'}</span>
                       </button>
 
                       {/* Re-record */}
                       <button
                         type="button"
-                        onClick={handleStartRecord}
+                        onClick={handleStartVideoRecord}
                         className="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-black text-xs flex items-center gap-1.5 shadow-xs transition cursor-pointer active:scale-95"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Thu lại 🔄</span>
+                        <span>Record Again • Thu lại 🔄</span>
                       </button>
 
                       {/* Submit right here! */}
                       <button
                         type="button"
-                        onClick={handleSubmitMission}
+                        onClick={handleSubmit}
                         disabled={isEvaluating}
                         className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-xs sm:text-sm shadow-md flex items-center gap-1.5 transition transform active:scale-95 cursor-pointer disabled:opacity-50"
                       >
                         {isEvaluating ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>AI đang chấm điểm...</span>
+                            <span>Evaluating • AI đang chấm điểm...</span>
                           </>
                         ) : (
                           <>
                             <Send className="w-4 h-4" />
-                            <span>Nộp Bài Chấm Điểm Ngay 🚀</span>
+                            <span>Submit Chant • Nộp Bài Chấm Điểm 🚀</span>
                           </>
                         )}
                       </button>
@@ -1202,14 +1270,15 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   <div className="space-y-1 w-full">
                     <button
                       type="button"
-                      onClick={handleStartRecord}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 mx-auto cursor-pointer transition transform active:scale-95"
+                      onClick={handleStartVideoRecord}
+                      disabled={activeRecordingMode !== null}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs sm:text-sm shadow-md flex items-center justify-center gap-2 mx-auto cursor-pointer transition transform active:scale-95 disabled:opacity-50"
                     >
                       <Mic className="w-4 h-4" />
-                      <span>Bật Micro & Thu Âm Ngay Theo Video! 🎈</span>
+                      <span>Record with Video • Bật Mic & Thu Âm Theo Video! 🎈</span>
                     </button>
                     <span className="text-[10px] text-zinc-500 font-bold block">
-                      💡 Vừa nhìn video và chữ vừa hát trực tiếp không cần cuộn trang!
+                      💡 Watch video & sing directly without scrolling! • Vừa nhìn video và chữ vừa hát trực tiếp!
                     </span>
                   </div>
                 )}
@@ -1280,10 +1349,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 </span>
                 <div>
                   <h2 className="text-lg font-black text-pink-700 flex items-center gap-1.5">
-                    <span>Thử Thách Tiết Tấu Chants Sáng Tạo 🌟</span>
+                    <span>Creative Chant Beat Challenge • Thử Thách Tiết Tấu Sáng Tạo 🌟</span>
                   </h2>
                   <span className="text-[11px] font-bold text-zinc-500">
-                    Creative Chant Beat Challenge • Khám phá nhịp trống cùng AI Buddy
+                    Explore rhythm & drums with AI Buddy • Khám phá nhịp trống cùng AI Buddy
                   </span>
                 </div>
               </div>
@@ -1300,14 +1369,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         ? 'bg-emerald-600 text-white shadow-emerald-200'
                         : 'bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300'
                     }`}
-                    title="Ghim hoặc mở cửa sổ video nổi để vừa xem vừa luyện tập"
+                    title="Pin floating video window to watch while practicing"
                   >
                     <Video className="w-3.5 h-3.5" />
-                    <span>{isFloatingVideoVisible ? '📺 Ghim Video' : '📺 Hiện Video Nổi'}</span>
+                    <span>{isFloatingVideoVisible ? '📺 Pin Video • Ghim' : '📺 Pop-up Video • Hiện'}</span>
                   </button>
                 )}
                 <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full border border-pink-200">
-                  Nhịp điệu: {currentBpm} BPM
+                  Tempo • Nhịp: {currentBpm} BPM
                 </span>
               </div>
             </div>
@@ -1315,7 +1384,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Sync Notice depending on practice mode */}
             <div className="bg-gradient-to-r from-amber-50 to-pink-50 p-2.5 rounded-xl border border-pink-200 text-xs font-bold text-pink-900 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-              <span>🥁 <b>Thử thách nhịp phách:</b> Chọn phong cách trống bên dưới, bấm <b>Bật Beat</b> để cảm nhận nhịp 1 - 2 - 3 - 4 và luyện chants sáng tạo!</span>
+              <span>🥁 <b>Beat Challenge • Thử thách nhịp phách:</b> Pick a drum style below, tap <b>Play Beat</b> to feel beats 1 - 2 - 3 - 4 and chant creatively! (Chọn phong cách trống bên dưới, bấm <b>Bật Beat</b> để cảm nhận nhịp 1 - 2 - 3 - 4 và luyện chants sáng tạo!)</span>
             </div>
 
             {/* Beat Listening Bar (Creative Chant Beat Challenge) */}
@@ -1323,20 +1392,20 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <div className="w-full flex items-center justify-between flex-wrap gap-1">
                 <span className="text-xs font-black text-pink-800 uppercase flex items-center gap-1.5">
                   <Music className="w-3.5 h-3.5 text-pink-600" />
-                  <span>A. Chọn Phong Cách Beat Trống Chants:</span>
+                  <span>A. Choose Chant Beat Style • Chọn Phong Cách Beat Trống:</span>
                 </span>
                 <span className="text-[10px] bg-pink-200 text-pink-800 font-bold px-2 py-0.5 rounded-full">
-                  🥁 4 Điệu Beat Tiểu Học
+                  🥁 4 Beat Styles • 4 Điệu Beat
                 </span>
               </div>
 
               {/* 4 Beat Style Selector Buttons */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 w-full">
                 {[
-                  { id: 'pop_chant', label: 'Chant Pop 🥁', desc: 'Sôi động, bắt tai' },
-                  { id: 'hiphop_kids', label: 'Hip-Hop 🚀', desc: 'Trống nẩy, hiện đại' },
-                  { id: 'clap_march', label: 'Clap March 👏', desc: 'Vỗ tay gõ phách' },
-                  { id: 'rocking', label: 'Rocking 🎸', desc: 'Năng lượng hào hứng' },
+                  { id: 'pop_chant', label: 'Pop Chant 🥁', desc: 'Catchy & Upbeat • Sôi động, bắt tai' },
+                  { id: 'hiphop_kids', label: 'Hip-Hop Kids 🚀', desc: 'Bouncy 808 Drums • Trống nẩy, hiện đại' },
+                  { id: 'clap_march', label: 'Clap March 👏', desc: 'Clap & March • Vỗ tay gõ phách' },
+                  { id: 'rocking', label: 'Rocking 🎸', desc: 'Driving Energy • Năng lượng hào hứng' },
                 ].map((st) => (
                   <button
                     key={st.id}
@@ -1379,6 +1448,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <div className="flex flex-wrap items-center justify-center gap-2 w-full pt-1">
                 {/* Beat Play / Stop Button */}
                 <button
+                  type="button"
                   onClick={toggleBeat}
                   className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-black text-sm shadow-md transition cursor-pointer ${
                     isBeatActive
@@ -1389,31 +1459,33 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   {isBeatActive ? (
                     <>
                       <Pause className="w-4 h-4 fill-current" />
-                      <span>Dừng Beat (Pause)</span>
+                      <span>Pause Beat • Dừng Beat</span>
                     </>
                   ) : (
                     <>
                       <Play className="w-4 h-4 fill-current" />
-                      <span>Bật Beat Nhạc 🎶</span>
+                      <span>Play Beat • Bật Beat Nhạc 🎶</span>
                     </>
                   )}
                 </button>
 
                 {/* Tempo Adjusters (-5 / +5) */}
                 <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-full border border-pink-300 shadow-sm text-xs font-black">
-                  <span className="text-zinc-500 mr-1">Tốc độ:</span>
+                  <span className="text-zinc-500 mr-1">Tempo • Tốc độ:</span>
                   <button
+                    type="button"
                     onClick={() => handleBpmChange(-5)}
                     className="w-6 h-6 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 flex items-center justify-center font-bold"
-                    title="Chậm lại 5 BPM"
+                    title="Slow down 5 BPM • Chậm lại 5 BPM"
                   >
                     -
                   </button>
                   <span className="font-mono text-pink-600 px-1">{currentBpm}</span>
                   <button
+                    type="button"
                     onClick={() => handleBpmChange(5)}
                     className="w-6 h-6 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 flex items-center justify-center font-bold"
-                    title="Nhanh hơn 5 BPM"
+                    title="Speed up 5 BPM • Nhanh hơn 5 BPM"
                   >
                     +
                   </button>
@@ -1421,20 +1493,22 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
 
                 {/* Package 1: Rhythm Tap Game Button */}
                 <button
+                  type="button"
                   onClick={() => setIsRhythmGameOpen(true)}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-amber-950 font-black text-xs shadow-sm transition cursor-pointer"
-                  title="Chơi mini-game gõ nhịp phách theo bài hát trước khi hát"
+                  title="Play rhythm tap game • Chơi mini-game gõ nhịp phách"
                 >
-                  <span>🎮 Game Gõ Nhịp (Rhythm Tap)</span>
+                  <span>🎮 Rhythm Tap Game • Game Gõ Nhịp</span>
                 </button>
               </div>
 
               {/* Quick BPM Presets & Custom Beat Audio Upload */}
               <div className="w-full flex items-center justify-between text-xs pt-2 border-t border-pink-200/60 flex-wrap gap-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-zinc-500 font-bold">Mẫu:</span>
+                  <span className="text-[11px] text-zinc-500 font-bold">Presets • Mẫu:</span>
                   {[75, 90, 110].map((preset) => (
                     <button
+                      type="button"
                       key={preset}
                       onClick={() => handleSetPresetBpm(preset)}
                       className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
@@ -1443,7 +1517,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                           : 'bg-white hover:bg-pink-50 text-zinc-700 border border-pink-200'
                       }`}
                     >
-                      {preset === 75 ? 'Chậm' : preset === 90 ? 'Vừa' : 'Nhanh'} ({preset})
+                      {preset === 75 ? 'Slow • Chậm' : preset === 90 ? 'Medium • Vừa' : 'Fast • Nhanh'} ({preset})
                     </button>
                   ))}
                 </div>
@@ -1455,7 +1529,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       <label className="text-[11px] text-pink-700 font-bold flex items-center gap-1 bg-white hover:bg-pink-50 px-2 py-1 rounded-lg border border-pink-300 cursor-pointer shadow-sm">
                         <Upload className="w-3 h-3" />
                         <Video className="w-3 h-3" />
-                        <span>Tải file Beat / Video</span>
+                        <span>Upload Beat / Video • Tải Beat</span>
                         <input
                           type="file"
                           accept="audio/*,video/*"
@@ -1467,17 +1541,18 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       {/* Extract Beat from Lesson Video */}
                       {lesson.videoUrl && (
                         <button
+                          type="button"
                           onClick={() => handleExtractBeatFromLessonVideo('vocal_reduced')}
                           disabled={isExtractingBeat}
                           className="text-[11px] text-indigo-700 font-bold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-50 px-2 py-1 rounded-lg border border-indigo-200 cursor-pointer shadow-sm transition"
-                          title="Trích xuất âm thanh/beat từ video bài học ở Bước 1"
+                          title="Extract audio/beat from lesson video in Step 1"
                         >
                           {isExtractingBeat ? (
                             <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
                           ) : (
                             <Sparkles className="w-3 h-3 text-amber-500" />
                           )}
-                          <span>Lấy Beat từ Video bài hát</span>
+                          <span>Extract Beat • Lấy Beat từ Video</span>
                         </button>
                       )}
                     </>
@@ -1489,11 +1564,12 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         🎵 {beatFileName}
                       </span>
                       <button
+                        type="button"
                         onClick={handleResetToSmartBeat}
                         className="text-[10px] text-zinc-400 hover:text-rose-600 underline cursor-pointer"
-                        title="Quay lại beat đàn piano mặc định"
+                        title="Reset to procedural smart beat • Quay lại beat mặc định"
                       >
-                        (Đặt lại)
+                        (Reset)
                       </button>
                     </div>
                   )}
@@ -1512,28 +1588,28 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             <div ref={recordingSectionRef} className="bg-yellow-50 p-4 rounded-2xl border-2 border-yellow-300 flex flex-col items-center text-center space-y-3">
               <span className="text-xs font-black text-amber-900 uppercase flex items-center gap-1.5">
                 <Mic className="w-3.5 h-3.5 text-amber-600" />
-                <span>B. Thu Âm Thử Thách Tiết Tấu Sáng Tạo (Beat Challenge):</span>
+                <span>B. Record Beat Challenge • Thu Âm Thử Thách Tiết Tấu Sáng Tạo:</span>
               </span>
               <p className="text-[11px] text-zinc-600 max-w-md">
-                Bật beat nhịp điệu ở trên, bấm Micro để hô khẩu hiệu/hát chants theo tiếng trống và nộp bài nhận danh hiệu <b>Creative Chant Master</b> nhé! 🌟
+                Turn on the beat above, tap Start Challenge to chant along with the drum groove and submit for the <b>Creative Chant Master</b> badge! 🌟 (Bật beat ở trên, bấm Micro để hô khẩu hiệu/hát chants theo tiếng trống và nộp bài nhé!)
               </p>
 
-              {countdown !== null ? (
+              {activeCountdownMode === 'challenge' ? (
                 <div className="py-4">
                   <span className="text-5xl font-black text-pink-600 animate-ping block">
                     {countdown}
                   </span>
                   <span className="text-sm font-bold text-zinc-600 mt-1 block">
-                    Chuẩn bị sẵn sàng hát nhé! 🎈 (Get ready to sing!)
+                    Get ready to chant! 🎈 (Chuẩn bị sẵn sàng hát theo beat nhé!)
                   </span>
                 </div>
-              ) : isRecording ? (
+              ) : activeRecordingMode === 'challenge' ? (
                 <div className="space-y-3 py-2 w-full">
                   <div className="flex items-center justify-center gap-2 text-rose-600 font-black text-sm animate-pulse">
                     <span className="w-3 h-3 rounded-full bg-rose-600" />
                     <span>
-                      Đang thu âm: {Math.floor(recordTimerSeconds / 60)}:
-                      {(recordTimerSeconds % 60).toString().padStart(2, '0')} - Hãy hát theo beat!
+                      Recording Beat Challenge: {Math.floor(recordTimerSeconds / 60)}:
+                      {(recordTimerSeconds % 60).toString().padStart(2, '0')} • Chant to the drum rhythm! (Hát theo nhịp trống!)
                     </span>
                   </div>
 
@@ -1556,34 +1632,38 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
 
                   {/* Stop button */}
                   <button
-                    onClick={handleStopRecord}
-                    className="px-6 py-2.5 rounded-full bg-red-500 hover:bg-red-600 text-white font-black text-sm shadow-lg flex items-center gap-2 mx-auto cursor-pointer transition transform active:scale-95"
+                    type="button"
+                    onClick={handleStopChallengeRecord}
+                    className="px-6 py-2.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white font-black text-sm shadow-lg flex items-center gap-2 mx-auto cursor-pointer transition transform active:scale-95"
                   >
                     <Square className="w-4 h-4 fill-current" />
-                    <span>Dừng Thu Âm (Stop Recording)</span>
+                    <span>Stop Recording • Dừng Thu Âm</span>
                   </button>
                 </div>
               ) : (
                 <button
-                  onClick={handleStartRecord}
-                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-xl shadow-green-300 flex items-center gap-3 cursor-pointer transition transform active:scale-95"
+                  type="button"
+                  onClick={handleStartChallengeRecord}
+                  disabled={activeRecordingMode !== null}
+                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-black text-base shadow-xl shadow-green-300 flex items-center gap-3 cursor-pointer transition transform active:scale-95 disabled:opacity-50"
                 >
                   <Mic className="w-5 h-5" />
-                  <span>Bật Micro & Bắt Đầu Thu Âm 🎙️</span>
+                  <span>Start Beat Challenge • Bật Micro & Thu Âm Thử Thách 🎙️</span>
                 </button>
               )}
 
-              {/* Playback & Download of Student Recording if completed */}
-              {recordedUrl && !isRecording && (
+              {/* Playback & Download of Student Recording if completed in Challenge Mode or general */}
+              {recordedUrl && activeRecordingMode === null && (recordedSourceMode === 'challenge' || recordedSourceMode === null) && (
                 <div className="w-full pt-3 border-t-2 border-yellow-200 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-black text-emerald-800 flex items-center gap-1">
                     <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    <span>Đã ghi âm giọng hát!</span>
+                    <span>Voice Recorded • Đã ghi âm giọng hát! {recordedSourceMode === 'video' ? '(Video Practice)' : '(Beat Challenge)'}</span>
                   </span>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={handlePlayRecording}
+                      type="button"
+                      onClick={handleTogglePlayRecording}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition cursor-pointer shadow ${
                         isPlayingRecording
                           ? 'bg-rose-500 text-white'
@@ -1593,28 +1673,30 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       {isPlayingRecording ? (
                         <>
                           <Square className="w-3.5 h-3.5 fill-current" />
-                          <span>Dừng phát</span>
+                          <span>Pause • Dừng phát</span>
                         </>
                       ) : (
                         <>
                           <Play className="w-3.5 h-3.5 fill-current" />
-                          <span>Nghe lại giọng hát 🎧</span>
+                          <span>Play Voice • Nghe lại giọng hát 🎧</span>
                         </>
                       )}
                     </button>
 
                     <button
-                      onClick={handleStartRecord}
-                      className="p-1.5 rounded-full bg-white hover:bg-yellow-100 text-zinc-600 border border-yellow-300"
-                      title="Thu âm lại (Record again)"
+                      type="button"
+                      onClick={handleStartChallengeRecord}
+                      className="p-1.5 rounded-full bg-white hover:bg-yellow-100 text-zinc-600 border border-yellow-300 cursor-pointer"
+                      title="Record again • Thu âm lại"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
 
                     <button
+                      type="button"
                       onClick={handleDownloadRecording}
-                      className="p-1.5 rounded-full bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-300"
-                      title="Tải file âm thanh về máy (Download audio)"
+                      className="p-1.5 rounded-full bg-white hover:bg-emerald-100 text-emerald-700 border border-emerald-300 cursor-pointer"
+                      title="Download audio file • Tải file âm thanh về máy"
                     >
                       <Download className="w-4 h-4" />
                     </button>
@@ -1628,31 +1710,31 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
           <div className="bg-gradient-to-r from-pink-500 via-rose-500 to-orange-400 p-1.5 rounded-3xl shadow-xl">
             <div className="bg-white rounded-[22px] p-5 text-center space-y-3">
               <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-zinc-600 flex-wrap gap-2">
-                <span>Bước 3: Hoàn thành bài tập</span>
+                <span>Step 3: Complete Mission • Bước 3: Hoàn thành bài tập</span>
                 {submitState === 'completed' ? (
                   <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 font-black flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Hoàn tất</span>
+                    <span>Completed • Hoàn tất</span>
                   </span>
                 ) : submitState === 'error' ? (
                   <span className="text-rose-700 bg-rose-100 px-2.5 py-0.5 rounded-md border border-rose-300 font-black flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Đã dừng do lỗi</span>
+                    <span>Stopped due to error • Đã dừng do lỗi</span>
                   </span>
                 ) : submitState === 'evaluating' ? (
                   <span className="text-pink-600 bg-pink-100 px-2.5 py-0.5 rounded-md font-black flex items-center gap-1 animate-pulse">
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Đang chấm điểm ({currentEvaluatingModel || 'AI'})...</span>
+                    <span>Evaluating • Đang chấm điểm ({currentEvaluatingModel || 'AI'})...</span>
                   </span>
                 ) : recordedUrl ? (
                   <span className="text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-md border border-emerald-300 font-bold flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5" />
-                    <span>Đã có bài thu âm (Sẵn sàng nộp) ✅</span>
+                    <span>Recording Ready • Đã có bài thu âm (Sẵn sàng nộp) ✅</span>
                   </span>
                 ) : (
                   <span className="text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-300 font-bold flex items-center gap-1">
                     <AlertCircle className="w-3.5 h-3.5" />
-                    <span>Chưa thu âm (Cần thu âm để nộp) ⚠️</span>
+                    <span>Not Recorded Yet • Chưa thu âm (Cần thu âm để nộp) ⚠️</span>
                   </span>
                 )}
               </div>
@@ -1662,26 +1744,28 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 <div className="bg-rose-50 border-2 border-rose-400 p-3.5 rounded-2xl text-left space-y-2 animate-fade-in">
                   <div className="flex items-center gap-2 text-rose-800 font-black text-xs">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Thông báo:</span>
+                    <span>Notice • Thông báo lỗi:</span>
                   </div>
                   <div className="bg-white p-2.5 rounded-xl border border-rose-200 font-mono text-[11px] text-rose-700 break-all select-all">
                     {apiErrorMessage}
                   </div>
                   <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
                     <span className="text-[10px] text-rose-600 font-bold">
-                      💡 Hãy đổi hoặc kiểm tra lại API key trong phần Settings.
+                      💡 Check or change your API key in Settings • Kiểm tra lại API key trong phần Settings.
                     </span>
                     <button
+                      type="button"
                       onClick={onOpenApiKeyModal}
                       className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl transition cursor-pointer shadow-sm"
                     >
-                      Mở Settings (API Key)
+                      Settings (API Key)
                     </button>
                   </div>
                 </div>
               )}
 
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={isEvaluating}
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-orange-400 hover:from-pink-400 hover:to-orange-300 text-white font-black text-xl tracking-wider shadow-xl shadow-pink-300 disabled:opacity-50 cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-3"
@@ -1689,20 +1773,20 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                 {isEvaluating ? (
                   <>
                     <RefreshCw className="w-6 h-6 animate-spin" />
-                    <span>AI Buddy Đang Chấm Điểm... ✨</span>
+                    <span>AI Buddy is grading... • AI Buddy Đang Chấm Điểm... ✨</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-6 h-6" />
-                    <span>NỘP BÀI / SUBMIT CHANT 🚀</span>
+                    <span>SUBMIT CHANT • NỘP BÀI CHẤM ĐIỂM 🚀</span>
                   </>
                 )}
               </button>
 
               <p className="text-[11px] font-bold text-zinc-500">
                 {recordedUrl
-                  ? '🎉 Em đã thu âm bài hát! Hãy bấm nút trên để nộp cho Robot AI Buddy chấm điểm và nhận huy hiệu nhé!'
-                  : '⚠️ Chú ý: Học sinh cần bấm "Bật Micro & Bắt Đầu Thu Âm" ở Bước 2 để tập hát trước khi nộp bài. Nếu chưa thu âm, hệ thống sẽ yêu cầu Try again!'}
+                  ? '🎉 Recording ready! Tap Submit for AI Buddy evaluation & badge! • Em đã thu âm bài hát! Hãy bấm nút trên để nộp cho Robot AI Buddy chấm điểm và nhận huy hiệu nhé!'
+                  : '⚠️ Please record your voice in Step 1 or Step 2 before submitting. • Học sinh cần bấm thu âm ở Bước 1 hoặc Bước 2 trước khi nộp bài. Nếu chưa thu âm, hệ thống sẽ yêu cầu Try again!'}
               </p>
             </div>
           </div>
@@ -1713,24 +1797,26 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <span className="text-xs font-black text-zinc-800 uppercase flex items-center gap-1.5">
                   <Award className="w-4 h-4 text-pink-600" />
-                  <span>🏆 Kết quả đã nộp phiên này ({submissionHistory.length}):</span>
+                  <span>🏆 Submitted Results • Kết quả đã nộp phiên này ({submissionHistory.length}):</span>
                 </span>
                 {submissionHistory.length > 1 && (
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={handleKeepBestResultOnly}
                       className="text-[11px] font-black text-pink-700 bg-pink-100 hover:bg-pink-200 px-2.5 py-1 rounded-xl transition cursor-pointer flex items-center gap-1 shadow-sm"
-                      title="Chỉ giữ lại 1 kết quả có số điểm cao nhất"
+                      title="Keep highest score result only • Chỉ giữ lại 1 kết quả có số điểm cao nhất"
                     >
                       <Sparkles className="w-3 h-3 text-amber-500 fill-amber-500" />
-                      <span>Chỉ giữ kết quả cao nhất</span>
+                      <span>Keep Best Only • Chỉ giữ kết quả cao nhất</span>
                     </button>
                     <button
+                      type="button"
                       onClick={() => setSubmissionHistory([])}
                       className="text-[11px] font-bold text-zinc-500 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-xl transition cursor-pointer"
-                      title="Xoá tất cả lịch sử nộp bài"
+                      title="Clear all submissions • Xoá tất cả lịch sử nộp bài"
                     >
-                      Xoá hết
+                      Clear All • Xoá hết
                     </button>
                   </div>
                 )}
@@ -1747,7 +1833,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                         🎵 {item.songTitle} <span className="text-[11px] text-zinc-400 font-normal">({item.time})</span>
                       </span>
                       <span className="font-black text-pink-700 bg-white px-2 py-0.5 rounded-lg border border-pink-200 shadow-xs">
-                        {item.score} điểm
+                        {item.score} pts
                       </span>
                       <span className="font-bold text-amber-500 tracking-wider">
                         {'⭐'.repeat(item.stars)}
@@ -1760,19 +1846,20 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => handleDeleteSubmission(item.id)}
-                      title="Xoá kết quả này (nếu chưa vừa ý)"
+                      title="Delete this result • Xoá kết quả này"
                       className="p-1.5 rounded-xl text-zinc-400 hover:text-rose-600 hover:bg-rose-100 transition cursor-pointer flex items-center gap-1 shrink-0 text-[11px] font-bold"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Xoá</span>
+                      <span className="hidden sm:inline">Delete • Xoá</span>
                     </button>
                   </div>
                 ))}
               </div>
 
               <p className="text-[11px] text-zinc-500 font-medium italic">
-                💡 Em có thể bấm nút <b>"Xoá"</b> để bỏ các lượt điểm chưa cao, chỉ giữ lại kết quả tốt nhất mà em mong muốn!
+                💡 You can tap <b>"Delete • Xoá"</b> to remove lower scores and keep only your best chant performance! (Em có thể xoá lượt điểm chưa cao, chỉ giữ lại kết quả tốt nhất!)
               </p>
             </div>
           )}
@@ -1786,9 +1873,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b">
               <h3 className="text-base font-black text-zinc-900 flex items-center gap-2">
                 <Upload className="w-5 h-5 text-emerald-600" />
-                <span>Đổi / Tải Video Cho Bài Hát</span>
+                <span>Upload / Change Video • Đổi / Tải Video Cho Bài Hát</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowVideoInputModal(false)}
                 className="text-zinc-400 hover:text-zinc-600 text-lg font-black cursor-pointer"
               >
@@ -1799,12 +1887,12 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Option A: Upload local video file */}
             <div className="space-y-1.5">
               <label className="text-xs font-black text-zinc-700 block">
-                Cách 1: Tải video từ máy tính (MP4, WebM):
+                Method 1: Upload from computer (MP4, WebM) • Cách 1: Tải video từ máy tính:
               </label>
               <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-emerald-300 rounded-xl bg-emerald-50/50 hover:bg-emerald-100/50 transition cursor-pointer text-center">
                 <Upload className="w-6 h-6 text-emerald-600 mb-1" />
-                <span className="text-xs font-bold text-zinc-700">Chọn file video từ máy</span>
-                <span className="text-[10px] text-zinc-500">Hỗ trợ file MP4, WebM</span>
+                <span className="text-xs font-bold text-zinc-700">Select video file • Chọn file video</span>
+                <span className="text-[10px] text-zinc-500">Supports MP4, WebM • Hỗ trợ MP4, WebM</span>
                 <input
                   type="file"
                   accept="video/*"
@@ -1817,30 +1905,32 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Option B: Enter video URL / YouTube link */}
             <div className="space-y-1.5 pt-2 border-t">
               <label className="text-xs font-black text-zinc-700 block">
-                Cách 2: Hoặc dán link video / YouTube bài Chants:
+                Method 2: Paste YouTube / Video Link • Cách 2: Dán link video / YouTube:
               </label>
               <div className="flex gap-2">
                 <input
                   type="url"
-                  placeholder="https://www.youtube.com/watch?v=... hoặc file .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... or .mp4"
                   value={customVideoInputUrl}
                   onChange={(e) => setCustomVideoInputUrl(e.target.value)}
                   className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-emerald-500"
                 />
                 <button
+                  type="button"
                   onClick={handleApplyCustomVideoUrl}
                   className="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl cursor-pointer"
                 >
-                  Áp dụng
+                  Apply • Áp dụng
                 </button>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={() => setShowVideoInputModal(false)}
               className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
             >
-              Đóng
+              Close • Đóng
             </button>
           </div>
         </div>
@@ -1853,9 +1943,10 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
               <h3 className="text-base font-black text-zinc-900 flex items-center gap-2">
                 <Video className="w-5 h-5 text-purple-600" />
-                <span>Đăng Video Karaoke Có Lời Chạy</span>
+                <span>Upload Karaoke Video with Lyrics • Đăng Video Karaoke Có Lời</span>
               </h3>
               <button
+                type="button"
                 onClick={() => setShowKaraokeModal(false)}
                 className="text-zinc-400 hover:text-zinc-600 text-lg font-black cursor-pointer"
               >
@@ -1866,14 +1957,14 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Option A: Upload local video file */}
             <div className="space-y-1.5">
               <label className="text-xs font-black text-zinc-700 block">
-                Cách 1: Tải video karaoke từ máy tính (MP4, WebM):
+                Method 1: Upload from computer (MP4, WebM) • Cách 1: Tải video từ máy:
               </label>
               <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50/50 hover:bg-purple-100/50 transition cursor-pointer text-center">
                 <Upload className="w-6 h-6 text-purple-600 mb-1" />
                 <span className="text-xs font-bold text-zinc-700">
-                  {karaokeUploadFileName || 'Chọn file video karaoke từ máy'}
+                  {karaokeUploadFileName || 'Select video file • Chọn file video từ máy'}
                 </span>
-                <span className="text-[10px] text-zinc-500">Hỗ trợ file MP4, WebM</span>
+                <span className="text-[10px] text-zinc-500">Supports MP4, WebM • Hỗ trợ MP4, WebM</span>
                 <input
                   type="file"
                   accept="video/*"
@@ -1902,17 +1993,18 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Option B: Enter video URL / YouTube link */}
             <div className="space-y-1.5 pt-2 border-t border-zinc-100">
               <label className="text-xs font-black text-zinc-700 block">
-                Cách 2: Hoặc dán link video / YouTube Karaoke có lời:
+                Method 2: Paste YouTube / Karaoke Link • Cách 2: Dán link YouTube có lời:
               </label>
               <div className="flex gap-2">
                 <input
                   type="url"
-                  placeholder="https://www.youtube.com/watch?v=... hoặc link .mp4"
+                  placeholder="https://www.youtube.com/watch?v=... or .mp4"
                   value={customKaraokeInputUrl}
                   onChange={(e) => setCustomKaraokeInputUrl(e.target.value)}
                   className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-purple-500"
                 />
                 <button
+                  type="button"
                   onClick={() => {
                     if (customKaraokeInputUrl.trim()) {
                       setActiveKaraokeUrl(customKaraokeInputUrl.trim());
@@ -1929,16 +2021,17 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   }}
                   className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm"
                 >
-                  Áp dụng
+                  Apply • Áp dụng
                 </button>
               </div>
             </div>
 
             <button
+              type="button"
               onClick={() => setShowKaraokeModal(false)}
               className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold rounded-xl cursor-pointer"
             >
-              Đóng
+              Close • Đóng
             </button>
           </div>
         </div>
@@ -1987,7 +2080,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Badge Award */}
             <div className="inline-flex items-center gap-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-md">
               <Award className="w-4 h-4 text-yellow-300" />
-              <span>Award: {feedback.badgeEarned}</span>
+              <span>Award • Huy hiệu: {feedback.badgeEarned}</span>
             </div>
 
             {/* Short English Praise Message */}
@@ -2035,6 +2128,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {feedback.headline === 'Try again! 🎈' && !recordedUrl ? (
               <div className="pt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     setShowFeedbackModal(false);
                     setTimeout(() => {
@@ -2044,40 +2138,43 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-black text-sm sm:text-base shadow-lg shadow-amber-300 cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Mic className="w-5 h-5" />
-                  <span>Em đi thu âm ngay! 🎤 (Go to Record)</span>
+                  <span>Go to Record • Em đi thu âm ngay! 🎤</span>
                 </button>
               </div>
             ) : (
               <div className="space-y-2 pt-2">
                 {/* 1. Primary: Keep this result */}
                 <button
+                  type="button"
                   onClick={handleKeepResult}
                   className="w-full py-3 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-black text-sm sm:text-base shadow-lg shadow-green-200 cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-2"
                 >
                   <CheckCircle className="w-5 h-5" />
-                  <span>⭐ Giữ kết quả này (Hoàn tất)</span>
+                  <span>Keep Result • Giữ kết quả này (Hoàn tất) ⭐</span>
                 </button>
 
                 {/* 2. Secondary Row: Try Again & Delete */}
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   {/* Try Again */}
                   <button
+                    type="button"
                     onClick={handleTryAgain}
                     className="py-2.5 px-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white font-black text-xs sm:text-sm shadow-md cursor-pointer transition transform active:scale-95 flex items-center justify-center gap-1.5"
-                    title="Chưa vừa ý? Xoá điểm này và thu âm lại để lấy điểm cao hơn!"
+                    title="Try again to get a higher score • Làm lại để lấy điểm cao hơn!"
                   >
                     <RotateCcw className="w-4 h-4" />
-                    <span>Try Again! 🔄</span>
+                    <span>Try Again! • Làm lại 🔄</span>
                   </button>
 
                   {/* Delete this result */}
                   <button
+                    type="button"
                     onClick={handleDeleteLatestResult}
                     className="py-2.5 px-3 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-200 hover:border-rose-300 font-black text-xs sm:text-sm transition cursor-pointer flex items-center justify-center gap-1.5"
-                    title="Xoá kết quả này khỏi lịch sử"
+                    title="Delete this result from history • Xoá kết quả này khỏi lịch sử"
                   >
                     <Trash2 className="w-4 h-4 text-rose-500" />
-                    <span>Xoá điểm này 🗑️</span>
+                    <span>Delete • Xoá điểm này 🗑️</span>
                   </button>
                 </div>
               </div>
@@ -2097,7 +2194,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               <div className="flex items-center justify-between gap-1.5 px-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-800 truncate">
                   <span className="animate-pulse">📺</span>
-                  <span className="truncate">Video Chant Mẫu</span>
+                  <span className="truncate">Mini Chant Video • Video Chant Mẫu</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {/* Scroll to main video */}
@@ -2107,7 +2204,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                       mainVideoSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
                     }
                     className="p-1 rounded-lg hover:bg-emerald-100 text-emerald-700 transition cursor-pointer"
-                    title="Cuộn lên xem video lớn"
+                    title="Scroll to main video • Cuộn lên xem video lớn"
                   >
                     <ArrowUp className="w-3.5 h-3.5" />
                   </button>
@@ -2116,7 +2213,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                     type="button"
                     onClick={() => setIsFloatingMinimized((prev) => !prev)}
                     className="p-1 rounded-lg hover:bg-emerald-100 text-emerald-700 transition cursor-pointer"
-                    title={isFloatingMinimized ? 'Mở rộng video' : 'Thu gọn'}
+                    title={isFloatingMinimized ? 'Expand • Mở rộng video' : 'Minimize • Thu gọn'}
                   >
                     {isFloatingMinimized ? (
                       <ChevronUp className="w-3.5 h-3.5" />
@@ -2129,7 +2226,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                     type="button"
                     onClick={() => setIsFloatingVideoVisible(false)}
                     className="p-1 rounded-lg hover:bg-rose-100 text-rose-600 transition cursor-pointer"
-                    title="Đóng video nổi"
+                    title="Close floating video • Đóng video nổi"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -2164,7 +2261,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   onClick={() => setIsFloatingMinimized(false)}
                   className="text-[11px] font-bold text-emerald-700 hover:underline px-2 py-0.5 block cursor-pointer"
                 >
-                  Bấm để xem video chant mẫu 🎬
+                  Click to view video • Bấm để xem video chant mẫu 🎬
                 </button>
               )}
             </div>
