@@ -287,7 +287,9 @@ export default function App() {
       localStorage.getItem('singbuddy_lessons');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        return INITIAL_LESSONS;
       } catch {
         return INITIAL_LESSONS;
       }
@@ -295,7 +297,10 @@ export default function App() {
     return INITIAL_LESSONS;
   });
 
-  const [activeLesson, setActiveLesson] = useState<SongLesson>(lessons[0]);
+  const [activeLesson, setActiveLesson] = useState<SongLesson>(() => {
+    return lessons && lessons.length > 0 ? lessons[0] : INITIAL_LESSONS[0];
+  });
+  const currentLesson = activeLesson || lessons[0] || INITIAL_LESSONS[0];
   const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -587,7 +592,7 @@ export default function App() {
         {/* Main Student Mission Playground */}
         <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-6">
           <StudentMissionView
-            lesson={activeLesson}
+            lesson={currentLesson}
             allLessons={lessons}
             onSelectLesson={(l) => setActiveLesson(l)}
             onUpdateLesson={handleUpdateLesson}
@@ -711,7 +716,7 @@ export default function App() {
       <ShareLessonModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
-        lesson={activeLesson}
+        lesson={currentLesson}
       />
     </div>
   );
