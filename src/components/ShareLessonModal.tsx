@@ -98,10 +98,10 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl font-black text-pink-700">
-                Share Lesson • Xuất Link Heyzine
+                Share Lesson
               </h2>
               <p className="text-xs font-bold text-zinc-500">
-                Embed interactive chant into Heyzine Flipbook or share direct link to students! • Nhúng vào sách Heyzine hoặc gửi link trực tiếp!
+                Embed interactive chant into Heyzine Flipbook or share direct link with students!
               </p>
             </div>
           </div>
@@ -124,12 +124,12 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
                 {lesson.title}
               </span>
               <span className="text-[11px] font-bold text-zinc-500">
-                {lesson.gradeLevel} • {lesson.bpm} BPM • {lesson.lyrics.length} lines • câu hát
+                {lesson.gradeLevel} • {lesson.bpm} BPM • {lesson.lyrics.length} lines
               </span>
             </div>
           </div>
           <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
-            Ready to Share • Sẵn sàng giao
+            Ready to Share
           </span>
         </div>
 
@@ -138,15 +138,15 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
           <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-400 text-amber-950 space-y-2 animate-fade-in">
             <div className="flex items-center gap-2 font-black text-xs text-amber-800">
               <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-              <span>NOTE: Video is a local file (.mp4) • LƯU Ý: Video bài hát đang là tệp từ máy tính cá nhân!</span>
+              <span>NOTE: Video is a local file (.mp4)</span>
             </div>
             <p className="text-xs leading-relaxed text-amber-900">
-              Because this video file is stored on your local computer, students on <b>Phones or Tablets (iPad)</b> cannot stream it over the internet. (Vì tệp video này nằm trong máy tính cá nhân, học sinh dùng điện thoại hoặc iPad sẽ không tải được qua mạng).
+              Because this video file is stored on your local computer, students on <b>Phones or Tablets (iPad)</b> cannot stream it over the internet.
             </p>
             <div className="bg-white/90 p-2.5 rounded-xl text-xs font-bold text-emerald-800 border border-amber-200">
-              👉 <b>Solution for 100% Mobile & Tablet Support • Cách khắc phục:</b>
+              👉 <b>Solution for 100% Mobile & Tablet Support:</b>
               <br />
-              In Teacher Studio, paste a <b>YouTube Link</b> or <b>Google Drive Link</b> into the Video field so students on any device can watch smoothly! (Dán link YouTube hoặc Google Drive để xem mượt mà trên mọi máy!)
+              In Teacher Studio, paste a <b>YouTube Link</b> or <b>Google Drive Link</b> into the Video field so students on any device can watch smoothly!
             </div>
           </div>
         )}
@@ -156,13 +156,13 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
           <div className="bg-emerald-50 p-4 rounded-2xl border-2 border-emerald-400 text-emerald-950 space-y-2 animate-fade-in">
             <div className="flex items-center gap-2 font-black text-xs text-emerald-800">
               <Music className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>NOTE: Beat audio is a local file • LƯU Ý: Nhạc Beat đang là file từ máy tính (blob)!</span>
+              <span>NOTE: Beat audio is a local file</span>
             </div>
             <p className="text-xs leading-relaxed text-emerald-900">
-              On <b>Mobile phones or Tablets (iPad)</b>, the app will <b>automatically play the Smart Procedural Beat</b> (drum groove) so students can always practice with full sound! (Ứng dụng sẽ tự động phát Beat Nhịp Điệu Thông Minh để học sinh luôn nghe rõ nhạc và thực hành tốt!)
+              On <b>Mobile phones or Tablets (iPad)</b>, the app will <b>automatically play the Smart Procedural Beat</b> (drum groove) so students can always practice with full sound!
             </p>
             <div className="bg-white/90 p-2.5 rounded-xl text-xs font-bold text-emerald-900 border border-emerald-200">
-              💡 <b>To stream a custom MP3 • Để học sinh nghe MP3 riêng:</b>
+              💡 <b>To stream a custom MP3:</b>
               <br />
               Upload MP3 to Google Drive (set to <i>"Anyone with the link can view"</i>) and paste the link into <b>2. Backing Beat</b> in Teacher Studio.
             </div>
@@ -173,7 +173,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
         <div className="space-y-2">
           <label className="text-xs font-black text-zinc-700 flex items-center gap-1.5 uppercase">
             <Share2 className="w-4 h-4 text-pink-500" />
-            <span>1. Direct Student Link • Link trực tiếp cho học sinh:</span>
+            <span>1. Direct Student Link:</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -194,18 +194,18 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               {copiedLink ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Copied! • Đã chép!</span>
+                  <span>Copied!</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  <span>Copy Link • Sao chép Link</span>
+                  <span>Copy Link</span>
                 </>
               )}
             </button>
           </div>
           <p className="text-[11px] text-zinc-400">
-            💡 Students open this link to practice directly without requiring any login. • Học sinh mở link này sẽ vào ngay bài tập, không cần đăng nhập.
+            💡 Students open this link to practice directly without requiring any login.
           </p>
         </div>
 
@@ -213,7 +213,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
         <div className="space-y-2">
           <label className="text-xs font-black text-zinc-700 flex items-center gap-1.5 uppercase">
             <Code className="w-4 h-4 text-indigo-500" />
-            <span>2. Heyzine iFrame Code • Mã nhúng iFrame cho Heyzine (Flipbook Embed):</span>
+            <span>2. Heyzine iFrame Embed Code (Flipbook Embed):</span>
           </label>
           <div className="flex items-start gap-2">
             <textarea
@@ -234,12 +234,12 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
               {copiedIframe ? (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>Copied! • Đã chép!</span>
+                  <span>Copied!</span>
                 </>
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  <span>Copy iFrame • Sao chép iFrame</span>
+                  <span>Copy iFrame</span>
                 </>
               )}
             </button>
@@ -250,17 +250,17 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
         <div className="bg-amber-50 p-4 rounded-2xl border-2 border-amber-300 space-y-2">
           <span className="text-xs font-black text-amber-950 flex items-center gap-1.5 uppercase">
             <BookOpen className="w-4 h-4 text-amber-600" />
-            <span>3-Step Heyzine Integration Guide • Hướng dẫn 3 bước nhúng vào Heyzine:</span>
+            <span>3-Step Heyzine Integration Guide:</span>
           </span>
           <div className="text-xs text-amber-900 space-y-1.5 font-medium">
             <p>
-              1️⃣ <strong>Copy • Sao chép:</strong> Tap <strong>"Copy Link"</strong> (or iFrame code) above.
+              1️⃣ <strong>Copy:</strong> Tap <strong>"Copy Link"</strong> (or iFrame code) above.
             </p>
             <p>
-              2️⃣ <strong>Open Heyzine • Mở Heyzine:</strong> Go to your flipbook on <em>heyzine.com</em> &gt; Choose the page for this chant song.
+              2️⃣ <strong>Open Heyzine:</strong> Go to your flipbook on <em>heyzine.com</em> &gt; Choose the page for this chant song.
             </p>
             <p>
-              3️⃣ <strong>Paste • Dán vào:</strong> Select <strong>"Links"</strong> (or <strong>"iFrame / Web"</strong>) toolbar and paste the URL!
+              3️⃣ <strong>Paste:</strong> Select <strong>"Links"</strong> (or <strong>"iFrame / Web"</strong>) toolbar and paste the URL!
             </p>
           </div>
         </div>
@@ -274,7 +274,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
             className="text-xs font-bold text-pink-600 hover:text-pink-800 flex items-center gap-1 underline"
           >
             <ExternalLink className="w-3.5 h-3.5" />
-            <span>Test Student View in New Tab • Mở thử trang học sinh ở tab mới</span>
+            <span>Test Student View in New Tab</span>
           </a>
 
           <button
@@ -282,7 +282,7 @@ export const ShareLessonModal: React.FC<ShareLessonModalProps> = ({
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-900 text-white font-black text-xs transition cursor-pointer shadow-md"
           >
-            Close • Đóng lại
+            Close
           </button>
         </div>
       </div>
