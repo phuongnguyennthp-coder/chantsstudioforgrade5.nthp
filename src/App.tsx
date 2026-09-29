@@ -36,27 +36,27 @@ interface BackgroundSettingsModalProps {
 const PRESET_BACKGROUNDS = [
   {
     id: 'classroom',
-    name: 'Lớp học vui nhộn 🏫',
+    name: 'Classroom • Lớp học vui nhộn 🏫',
     url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=1920&q=80',
-    desc: 'Không gian lớp học ấm áp, nhiều màu sắc',
+    desc: 'Cozy and colorful classroom • Không gian ấm áp, nhiều màu sắc',
   },
   {
     id: 'music-world',
-    name: 'Thế giới âm nhạc 🎵',
+    name: 'Music World • Thế giới âm nhạc 🎵',
     url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1920&q=80',
-    desc: 'Chủ đề âm nhạc nghệ thuật sinh động',
+    desc: 'Lively musical arts • Nghệ thuật sinh động',
   },
   {
     id: 'starry-sky',
-    name: 'Bầu trời sao lấp lánh ✨',
+    name: 'Starry Sky • Bầu trời sao lấp lánh ✨',
     url: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1920&q=80',
-    desc: 'Khung cảnh bầu trời thơ mộng, kỳ ảo',
+    desc: 'Dreamy starry night • Khung cảnh kỳ ảo',
   },
   {
     id: 'pastel-rainbow',
-    name: 'Cầu vồng Pastel rực rỡ 🌈',
+    name: 'Pastel Rainbow • Cầu vồng rực rỡ 🌈',
     url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1920&q=80',
-    desc: 'Màu sắc tươi vui, thân thiện cho trẻ nhỏ',
+    desc: 'Bright pastel colors • Tươi vui, thân thiện',
   },
 ];
 
@@ -77,7 +77,7 @@ function BackgroundSettingsModal({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setPreviewError('Vui lòng chọn file hình ảnh hợp lệ (PNG, JPG, WebP)!');
+      setPreviewError('Please choose a valid image file (PNG, JPG, WebP)! • Vui lòng chọn file hình ảnh hợp lệ!');
       return;
     }
 
@@ -120,15 +120,16 @@ function BackgroundSettingsModal({
             </div>
             <div>
               <h3 className="text-xl font-black text-zinc-900">
-                Đổi Hình Nền Giao Diện (Background)
+                Change Background • Đổi Hình Nền
               </h3>
               <p className="text-xs font-bold text-zinc-500">
-                Tải ảnh từ máy tính hoặc chọn mẫu hình nền hoạt hình cho học sinh!
+                Upload image or select animated themes for students! • Tải ảnh hoặc chọn mẫu hình nền hoạt hình!
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600 transition cursor-pointer"
           >
@@ -139,7 +140,7 @@ function BackgroundSettingsModal({
         {/* Live Preview Box */}
         <div className="space-y-1.5">
           <label className="text-xs font-black text-zinc-700 block">
-            Xem trước hình nền hiện tại:
+            Preview • Xem trước hình nền:
           </label>
           <div
             className="w-full h-32 rounded-2xl border-2 border-dashed border-amber-300 relative overflow-hidden flex items-center justify-center shadow-inner"
@@ -155,7 +156,7 @@ function BackgroundSettingsModal({
                 🎵 chantsstudioforgrade5
               </span>
               <span className="text-[10px] font-bold text-zinc-600">
-                {selectedBg ? 'Hình nền tùy chỉnh đã chọn' : 'Nền mặc định ấm áp (#fdfbf7)'}
+                {selectedBg ? 'Custom background selected • Đã chọn hình nền tùy chỉnh' : 'Default warm background • Nền mặc định ấm áp (#fdfbf7)'}
               </span>
             </div>
           </div>
@@ -164,15 +165,15 @@ function BackgroundSettingsModal({
         {/* Upload Custom File from Device */}
         <div className="space-y-2 pt-1 border-t border-zinc-100">
           <label className="text-xs font-black text-zinc-700 block">
-            Cách 1: Tải ảnh từ máy tính của bạn (JPG, PNG, WebP):
+            Option 1: Upload from device (JPG, PNG, WebP) • Cách 1: Tải ảnh từ máy tính:
           </label>
           <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-emerald-300 rounded-2xl bg-emerald-50/50 hover:bg-emerald-100/50 transition cursor-pointer text-center">
             <Upload className="w-6 h-6 text-emerald-600 mb-1" />
             <span className="text-xs font-black text-zinc-800">
-              Chọn ảnh nền từ máy tính
+              Select Background Image • Chọn ảnh nền từ máy tính
             </span>
             <span className="text-[10px] text-zinc-500">
-              Hỗ trợ ảnh chất lượng cao (tự động căn chỉnh toàn màn hình)
+              High-resolution wallpaper supported • Tự động căn chỉnh toàn màn hình
             </span>
             <input
               type="file"
@@ -186,7 +187,7 @@ function BackgroundSettingsModal({
         {/* Or Enter Custom Image URL */}
         <div className="space-y-2 pt-1 border-t border-zinc-100">
           <label className="text-xs font-black text-zinc-700 block">
-            Cách 2: Hoặc dán liên kết ảnh trực tuyến (Image URL):
+            Option 2: Enter online Image URL • Cách 2: Dán liên kết ảnh trực tuyến:
           </label>
           <div className="flex gap-2">
             <input
@@ -197,10 +198,11 @@ function BackgroundSettingsModal({
               className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-300 outline-none focus:border-amber-500"
             />
             <button
+              type="button"
               onClick={handleApplyUrl}
               className="px-3 py-2 bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs font-black rounded-xl transition cursor-pointer shadow-sm"
             >
-              Áp dụng
+              Apply • Áp dụng
             </button>
           </div>
         </div>
@@ -208,11 +210,12 @@ function BackgroundSettingsModal({
         {/* Preset Theme Selection */}
         <div className="space-y-2 pt-1 border-t border-zinc-100">
           <label className="text-xs font-black text-zinc-700 block">
-            Cách 3: Chọn từ các mẫu hình nền sinh động có sẵn:
+            Option 3: Choose preset animated themes • Cách 3: Chọn mẫu có sẵn:
           </label>
           <div className="grid grid-cols-2 gap-2.5">
             {PRESET_BACKGROUNDS.map((theme) => (
               <button
+                type="button"
                 key={theme.id}
                 onClick={() => setSelectedBg(theme.url)}
                 className={`p-2.5 rounded-2xl border-2 text-left transition cursor-pointer flex flex-col gap-1 relative overflow-hidden group ${
@@ -248,10 +251,10 @@ function BackgroundSettingsModal({
             type="button"
             onClick={handleResetToDefault}
             className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold transition cursor-pointer flex items-center gap-1.5"
-            title="Quay lại hình nền ấm áp mặc định"
+            title="Reset to default background • Quay lại hình nền ấm áp mặc định"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Đặt lại mặc định</span>
+            <span>Reset • Đặt lại mặc định</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -260,7 +263,7 @@ function BackgroundSettingsModal({
               onClick={onClose}
               className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold transition cursor-pointer"
             >
-              Hủy
+              Cancel • Hủy
             </button>
             <button
               type="button"
@@ -268,7 +271,7 @@ function BackgroundSettingsModal({
               className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white text-xs font-black shadow-md cursor-pointer transition flex items-center gap-1.5"
             >
               <Check className="w-4 h-4" />
-              <span>Lưu Background</span>
+              <span>Save • Lưu Background</span>
             </button>
           </div>
         </div>
@@ -457,9 +460,12 @@ export default function App() {
                   <span className="bg-yellow-400 text-yellow-950 font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-sm">
                     Grade 5 Elementary Music ⭐
                   </span>
+                  <span className="bg-purple-100 text-purple-700 font-extrabold text-[11px] px-2.5 py-0.5 rounded-full border border-purple-200 shadow-sm flex items-center gap-1">
+                    ✨ Designed by Tím
+                  </span>
                 </div>
                 <p className="text-xs font-bold text-zinc-500 hidden sm:block">
-                  Xem video, hát theo beat nhạc bài hát, thu âm giọng hát và nộp bài để AI Buddy phản hồi!
+                  Watch video, chant along the beats, record your voice and get AI Buddy feedback! • Xem video, hát theo beat, thu âm và nhận phản hồi AI!
                 </p>
               </div>
             </div>
@@ -474,95 +480,103 @@ export default function App() {
                     </span>
                   ) : (
                     <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1 shadow-sm">
-                      🎓 Giao diện Học sinh
+                      🎓 Student View • Học sinh
                     </span>
                   )}
                   {/* Fullscreen Button for Student */}
                   <button
+                    type="button"
                     onClick={toggleFullscreen}
                     className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
-                    title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+                    title={isFullscreen ? 'Exit Fullscreen • Thu nhỏ' : 'Fullscreen • Toàn màn hình'}
                   >
                     {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-emerald-600" /> : <Maximize className="w-3.5 h-3.5 text-emerald-600" />}
-                    <span className="hidden sm:inline">{isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                    <span className="hidden sm:inline">{isFullscreen ? 'Exit • Thu nhỏ' : 'Fullscreen • Toàn màn hình'}</span>
                   </button>
                   {/* Discrete Teacher switch with PIN lock */}
                   <button
+                    type="button"
                     onClick={() => setIsPinModalOpen(true)}
                     className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold transition cursor-pointer flex items-center gap-1 shadow-sm"
-                    title="Dành cho Giáo viên mở Teacher Studio"
+                    title="Teacher Studio with PIN lock • Dành cho Giáo viên mở Teacher Studio"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-600" />
-                    <span className="hidden sm:inline">Giáo viên</span>
+                    <span className="hidden sm:inline">Teacher • Giáo viên</span>
                   </button>
                 </div>
               ) : (
                 <>
                   {/* Fullscreen Button for Teacher */}
                   <button
+                    type="button"
                     onClick={toggleFullscreen}
                     className="px-3 py-2 rounded-2xl bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-sm active:scale-95"
-                    title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+                    title={isFullscreen ? 'Exit Fullscreen • Thu nhỏ' : 'Fullscreen • Toàn màn hình'}
                   >
                     {isFullscreen ? <Minimize className="w-3.5 h-3.5 text-emerald-600" /> : <Maximize className="w-3.5 h-3.5 text-emerald-600" />}
-                    <span className="hidden sm:inline">{isFullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
+                    <span className="hidden sm:inline">{isFullscreen ? 'Exit • Thu nhỏ' : 'Fullscreen • Toàn màn hình'}</span>
                   </button>
                   {/* Switch back to Student View */}
                   <button
+                    type="button"
                     onClick={() => {
                       setIsStudentMode(true);
                       localStorage.setItem('chantsstudio_mode', 'student');
                     }}
                     className="px-3 py-2 rounded-2xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-black transition cursor-pointer flex items-center gap-1 border border-zinc-200 shadow-sm"
-                    title="Chuyển sang xem giao diện của học sinh"
+                    title="Switch to Student View • Chuyển sang xem giao diện của học sinh"
                   >
                     <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                    <span className="hidden sm:inline">Xem như Học sinh</span>
+                    <span className="hidden sm:inline">Student View • Xem như HS</span>
                   </button>
 
                   {/* Change Background Button */}
                   <button
+                    type="button"
                     onClick={() => setIsBgModalOpen(true)}
                     className="px-3 py-2 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-black transition cursor-pointer flex items-center gap-1.5 border border-amber-300 shadow-sm"
-                    title="Đổi hình nền bài tập hoặc tải ảnh nền từ máy"
+                    title="Change background wallpaper • Đổi hình nền bài tập"
                   >
                     <Palette className="w-3.5 h-3.5 text-amber-700" />
-                    <span className="hidden sm:inline">Đổi Background</span>
+                    <span className="hidden sm:inline">Background • Đổi Hình Nền</span>
                     <span className="sm:hidden">Nền</span>
                   </button>
 
                   {/* Share Link for Heyzine Button */}
                   <button
+                    type="button"
                     onClick={() => setIsShareModalOpen(true)}
                     className="px-3 py-2 rounded-2xl bg-pink-100 hover:bg-pink-200 text-pink-800 text-xs font-black transition cursor-pointer flex items-center gap-1.5 border border-pink-300 shadow-sm"
-                    title="Xuất link bài hát hiện tại để nhúng vào Heyzine hoặc gửi cho học sinh"
+                    title="Export Heyzine link • Xuất link bài hát để nhúng vào Heyzine hoặc gửi cho học sinh"
                   >
                     <Share2 className="w-3.5 h-3.5 text-pink-600" />
-                    <span className="hidden sm:inline">Xuất Link Heyzine</span>
+                    <span className="hidden sm:inline">Share Link • Xuất Link Heyzine</span>
                     <span className="sm:hidden">Giao bài</span>
                   </button>
 
                   {/* API Key Settings Button */}
                   <button
+                    type="button"
                     onClick={() => setIsApiKeyModalOpen(true)}
                     className="flex flex-col items-end px-3 py-1.5 rounded-2xl bg-rose-50 hover:bg-rose-100 border-2 border-rose-300 transition cursor-pointer text-right shadow-sm"
-                    title="Cài đặt API key và chọn model AI"
+                    title="API Key & AI Settings • Cài đặt API key và chọn model AI"
                   >
                     <div className="flex items-center gap-1.5 text-xs font-black text-rose-700">
                       <Key className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Settings (API Key)</span>
+                      <span>Settings • Cài đặt AI</span>
                     </div>
                     <span className="text-[10px] font-bold text-rose-600">
-                      Cấu hình AI
+                      API Key Config
                     </span>
                   </button>
 
                   {/* Teacher Studio Trigger */}
                   <button
+                    type="button"
                     onClick={() => setIsTeacherModalOpen(true)}
                     className="px-3.5 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 text-xs font-black shadow-md shadow-amber-200 transition cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>🍎 Teacher Studio</span>
+                    <span>🍎 Teacher Studio • Soạn bài</span>
                   </button>
                 </>
               )}
@@ -582,6 +596,17 @@ export default function App() {
             isStudentMode={isStudentMode}
           />
         </main>
+
+        {/* Subtle App Footer with Designed by Tím */}
+        <footer className="mt-12 text-center text-xs font-bold text-zinc-400 py-6 border-t border-zinc-200/60 flex items-center justify-center gap-2 flex-wrap">
+          <span>chantsstudioforgrade5</span>
+          <span>•</span>
+          <span>Grade 5 Elementary Music</span>
+          <span>•</span>
+          <span className="text-purple-600 font-black bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 shadow-xs">
+            ✨ Designed by Tím
+          </span>
+        </footer>
       </div>
 
       {/* Teacher PIN Access Modal */}
@@ -593,10 +618,10 @@ export default function App() {
             </div>
             <div>
               <h3 className="text-xl font-black text-amber-950">
-                Khu Vực Giáo Viên
+                Teacher Zone • Khu Vực Giáo Viên
               </h3>
               <p className="text-xs font-bold text-zinc-500 mt-1">
-                Nhập mã PIN để mở Teacher Studio & Cài đặt hệ thống (Mặc định: 1234):
+                Enter PIN to open Teacher Studio (Default: 1234) • Nhập mã PIN (Mặc định: 1234):
               </p>
             </div>
 
@@ -610,7 +635,7 @@ export default function App() {
                   setPinInput('');
                   setPinError('');
                 } else {
-                  setPinError('Mã PIN chưa đúng! (Mặc định: 1234)');
+                  setPinError('Incorrect PIN! (Default: 1234) • Mã PIN chưa đúng!');
                 }
               }}
               className="space-y-3"
@@ -623,7 +648,7 @@ export default function App() {
                   setPinInput(e.target.value);
                   setPinError('');
                 }}
-                placeholder="Nhập mã PIN (1234)"
+                placeholder="PIN (1234)"
                 autoFocus
                 className="w-full text-center tracking-widest text-xl font-black py-2.5 px-4 rounded-xl border-2 border-amber-300 focus:border-amber-500 outline-none"
               />
@@ -642,13 +667,13 @@ export default function App() {
                   }}
                   className="flex-1 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-bold cursor-pointer transition"
                 >
-                  Hủy
+                  Cancel • Hủy
                 </button>
                 <button
                   type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-amber-950 text-xs font-black shadow-md cursor-pointer transition"
                 >
-                  Xác nhận
+                  Confirm • Xác nhận
                 </button>
               </div>
             </form>
