@@ -28,6 +28,11 @@ import {
   FileText,
   X,
   Trash2,
+  Maximize,
+  Minimize,
+  ArrowUp,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { SongLesson, RoboBuddyFeedback } from '../types/kidsMusic';
 import { kidsBeatEngine } from '../audio/kidsBeatEngine';
@@ -125,6 +130,65 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
   const [karaokeVideoError, setKaraokeVideoError] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Floating Mini-Video (Sticky Picture-in-Picture) & Fullscreen State
+  const mainVideoSectionRef = useRef<HTMLDivElement | null>(null);
+  const [isVideoOutOfView, setIsVideoOutOfView] = useState(false);
+  const [isFloatingVideoVisible, setIsFloatingVideoVisible] = useState(true);
+  const [isFloatingMinimized, setIsFloatingMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Fullscreen toggle with fallback support for iOS / Safari / Heyzine
+  const toggleFullscreen = () => {
+    const doc = document as any;
+    const docEl = document.documentElement as any;
+    const isFs = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement);
+    if (!isFs) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const doc = document as any;
+      setIsFullscreen(Boolean(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  // IntersectionObserver to detect when the main video scrolls out of the viewport
+  useEffect(() => {
+    const target = mainVideoSectionRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const outOfView = !entry.isIntersecting && entry.boundingClientRect.top < 60;
+        setIsVideoOutOfView(outOfView);
+      },
+      { threshold: [0, 0.15] }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
   // Step 2: Beat State
   const [isBeatActive, setIsBeatActive] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(1);
@@ -198,7 +262,17 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
     setKaraokeVideoError(false);
 
     kidsBeatEngine.setBpm(lesson.bpm || 90);
-    kidsBeatEngine.setCustomBeatAudio(lesson.beatAudioUrl || null);
+    // Safe custom beat handling: if in student mode and teacher uploaded local blob, fallback cleanly to smart synth
+    const isLocalBlob = Boolean(lesson.beatAudioUrl?.startsWith('blob:'));
+    const safeBeatUrl = isStudentMode && isLocalBlob ? null : (lesson.beatAudioUrl || null);
+    kidsBeatEngine.setCustomBeatAudio(safeBeatUrl);
+    if (isStudentMode && isLocalBlob) {
+      setBeatFileName('Beat Nhịp Điệu Thông Minh (Smart Beat)');
+    } else if (lesson.beatAudioUrl) {
+      setBeatFileName(`Beat • ${lesson.title}`);
+    } else {
+      setBeatFileName(null);
+    }
 
     const unsubBeatTick = kidsBeatEngine.onBeatTick((b) => setCurrentBeat(b));
     const unsubBeatState = kidsBeatEngine.onBeatState((p) => setIsBeatActive(p));
@@ -651,6 +725,26 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
               </div>
             </div>
 
+            {/* Fullscreen Button */}
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className="px-3 py-2 rounded-2xl bg-white hover:bg-emerald-50 border-2 border-emerald-300 text-emerald-800 text-xs font-black transition cursor-pointer shadow-sm flex items-center gap-1.5 active:scale-95"
+              title={isFullscreen ? 'Thu nhỏ cửa sổ' : 'Phóng to toàn màn hình'}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline">Thu nhỏ</span>
+                </>
+              ) : (
+                <>
+                  <Maximize className="w-4 h-4 text-emerald-600" />
+                  <span className="hidden sm:inline">Toàn màn hình</span>
+                </>
+              )}
+            </button>
+
             {!isStudentMode && onOpenTeacherStudio && (
               <button
                 onClick={onOpenTeacherStudio}
@@ -759,7 +853,7 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             {/* Video Player: When in Video Beat mode and text mode is selected, top video is shown. When in Karaoke Video mode, video is displayed inside the practice box below */}
             {practiceMode === 'video_beat' && lyricsChoice === 'text' ? (
               <>
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-emerald-300 shadow-inner group flex items-center justify-center">
+                <div ref={mainVideoSectionRef} className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 border-3 border-emerald-300 shadow-inner group flex items-center justify-center">
                   {youtubeEmbedUrl ? (
                     // YouTube / Google Drive Iframe Embed Player (Plays on 100% of PC, Phones & Tablets)
                     <iframe
@@ -1062,9 +1156,29 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
                   </span>
                 </div>
               </div>
-              <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full border border-pink-200">
-                Nhịp điệu: {currentBpm} BPM
-              </span>
+              <div className="flex items-center gap-2">
+                {practiceMode === 'video_beat' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFloatingVideoVisible((prev) => !prev);
+                      setIsFloatingMinimized(false);
+                    }}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1 shadow-xs active:scale-95 ${
+                      isFloatingVideoVisible
+                        ? 'bg-emerald-600 text-white shadow-emerald-200'
+                        : 'bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300'
+                    }`}
+                    title="Ghim hoặc mở cửa sổ video nổi để vừa xem vừa luyện tập"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>{isFloatingVideoVisible ? '📺 Ghim Video' : '📺 Hiện Video Nổi'}</span>
+                  </button>
+                )}
+                <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full border border-pink-200">
+                  Nhịp điệu: {currentBpm} BPM
+                </span>
+              </div>
             </div>
 
             {/* Sync Notice depending on practice mode */}
@@ -1820,6 +1934,91 @@ export const StudentMissionView: React.FC<StudentMissionViewProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* FLOATING PICTURE-IN-PICTURE VIDEO WINDOW FOR HEYZINE & MOBILE */}
+      {practiceMode === 'video_beat' &&
+        isFloatingVideoVisible &&
+        isVideoOutOfView &&
+        (youtubeEmbedUrl || (activeVideoUrl && (!activeVideoUrl.startsWith('blob:') || !isStudentMode))) && (
+          <div className="fixed bottom-4 right-4 z-40 animate-fade-in shadow-2xl">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl border-3 border-emerald-400 p-2 text-zinc-900 shadow-2xl max-w-[300px] sm:max-w-[340px] space-y-1.5">
+              {/* Mini Header Bar */}
+              <div className="flex items-center justify-between gap-1.5 px-1">
+                <div className="flex items-center gap-1.5 text-[11px] font-black text-emerald-800 truncate">
+                  <span className="animate-pulse">📺</span>
+                  <span className="truncate">Video Chant Mẫu</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {/* Scroll to main video */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      mainVideoSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                    className="p-1 rounded-lg hover:bg-emerald-100 text-emerald-700 transition cursor-pointer"
+                    title="Cuộn lên xem video lớn"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  {/* Minimize / Expand */}
+                  <button
+                    type="button"
+                    onClick={() => setIsFloatingMinimized((prev) => !prev)}
+                    className="p-1 rounded-lg hover:bg-emerald-100 text-emerald-700 transition cursor-pointer"
+                    title={isFloatingMinimized ? 'Mở rộng video' : 'Thu gọn'}
+                  >
+                    {isFloatingMinimized ? (
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                  {/* Close */}
+                  <button
+                    type="button"
+                    onClick={() => setIsFloatingVideoVisible(false)}
+                    className="p-1 rounded-lg hover:bg-rose-100 text-rose-600 transition cursor-pointer"
+                    title="Đóng video nổi"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Video Player */}
+              {!isFloatingMinimized ? (
+                <div className="aspect-video w-64 sm:w-80 rounded-xl overflow-hidden bg-black shadow-inner">
+                  {youtubeEmbedUrl ? (
+                    <iframe
+                      src={youtubeEmbedUrl}
+                      title="Mini Chant Video"
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : activeVideoUrl ? (
+                    <video
+                      src={activeVideoUrl}
+                      controls
+                      loop
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  ) : null}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsFloatingMinimized(false)}
+                  className="text-[11px] font-bold text-emerald-700 hover:underline px-2 py-0.5 block cursor-pointer"
+                >
+                  Bấm để xem video chant mẫu 🎬
+                </button>
+              )}
+            </div>
+          </div>
       )}
 
       {/* Chant Rhythm Tap Game Modal (Package 1) */}
